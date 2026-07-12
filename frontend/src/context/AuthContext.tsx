@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { type User, type UserRole } from '../types';
 
+export const API_BASE = 'http://localhost';
+
 interface AuthContextType {
   user: User | null;
   login: (username: string, roleType: 'admin' | 'user') => Promise<boolean>;
@@ -16,43 +18,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 从 localStorage 中恢复登录态
-    const storedUser = localStorage.getItem('lightnews_user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        localStorage.removeItem('lightnews_user');
-      }
+    // 从 localStorage 中恢复登录态并向后端请求最新资料验证
+    const token = localStorage.getItem('lightnews_token');
+    if (token) {
+      fetch(`${API_BASE}/api/auth/profile/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+        .then(res => {
+          if (res.ok) {
+            return res.json();
+          }
+          throw new Error('Unauthorized');
+        })
+        .then(data => {
+          if (data.success) {
+            setUser(data.user);
+          } else {
+            logout();
+          }
+        })
+        .catch(() => {
+          logout();
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   const login = async (username: string, roleType: 'admin' | 'user'): Promise<boolean> => {
-    // 模拟登录过程
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const mockUser: User = {
-          id: roleType === 'admin' ? 99 : 101,
-          username: username,
-          email: `${username}@lightnews.com`,
-          phone_number: roleType === 'admin' ? '18888888888' : '13333333333',
-          roles: roleType === 'admin' ? ['ROLE_USER', 'ROLE_ADMIN_USER'] : ['ROLE_USER'],
-          nickname: roleType === 'admin' ? '总编辑 (管理员)' : '特邀财经读者',
-          avatar_url: '',
-          bio: roleType === 'admin' ? '负责华尔街见闻核心板块采编与审核。' : '热爱宏观经济分析与全球大盘趋势研究。',
-          is_analyst: roleType === 'admin',
-        };
-        setUser(mockUser);
-        localStorage.setItem('lightnews_user', JSON.stringify(mockUser));
-        resolve(true);
-      }, 500);
-    });
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/login/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username, roleType })
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        localStorage.setItem('lightnews_token', data.token);
+        setUser(data.user);
+        return true;
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+    }
+    return false;
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('lightnews_user');
+    localStorage.removeItem('lightnews_token');
   };
 
   const hasRole = (role: UserRole): boolean => {

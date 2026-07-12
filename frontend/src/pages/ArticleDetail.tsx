@@ -21,91 +21,133 @@ import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import StarIcon from '@mui/icons-material/Star';
 import LockIcon from '@mui/icons-material/Lock';
-import { useAuth } from '../context/AuthContext';
-import { MOCK_ARTICLES } from './Home';
+import { useAuth, API_BASE } from '../context/AuthContext';
 import { type Article, type Comment } from '../types';
-
-const INITIAL_COMMENTS: Comment[] = [
-  {
-    id: 1,
-    user: { username: 'investor_wang', nickname: '老王投硬科技', avatar_url: '' },
-    content: '这篇文章写得很透彻！大模型商业化的比拼已经从参数量走向算力吞吐和性价比了。具身智能赛道也同样，核心在于谁先打通工厂量产。',
-    created_at: '2026-07-12 11:30:12',
-    likes_count: 32,
-    replies: [
-      {
-        id: 2,
-        user: { username: 'macro_student', nickname: '创投小学生', avatar_url: '' },
-        content: '赞同，BOM成本能否控制在2万美元以内是工业落地的硬指标。',
-        created_at: '2026-07-12 11:45:20',
-        likes_count: 5,
-      }
-    ],
-  },
-  {
-    id: 3,
-    user: { username: 'tech_bull', nickname: 'AI创投观察', avatar_url: '' },
-    content: '中东主权基金最近的直投意愿非常强，只要是硬科技头部独角兽，资金配比很充裕，算是市场难得的增量。',
-    created_at: '2026-07-12 10:20:00',
-    likes_count: 18,
-  }
-];
 
 export const ArticleDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
   const [article, setArticle] = useState<Article | null>(null);
-  const [comments, setComments] = useState<Comment[]>(INITIAL_COMMENTS);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [newCommentText, setNewCommentText] = useState('');
   const [liked, setLiked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
 
-  useEffect(() => {
-    const found = MOCK_ARTICLES.find((art) => art.slug === slug);
-    if (found) {
-      setArticle(found);
+  // 加载文章和评论数据
+  const fetchArticleAndComments = async () => {
+    try {
+      const token = localStorage.getItem('lightnews_token');
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      // 获取文章详情
+      const artRes = await fetch(`${API_BASE}/api/articles/${slug}/`, { headers });
+      const artData = await artRes.json();
+      if (artData.success) {
+        setArticle(artData.article);
+      }
+
+      // 获取审核过的评论树
+      const cmtRes = await fetch(`${API_BASE}/api/interactions/comment/?article_slug=${slug}`);
+      const cmtData = await cmtRes.json();
+      if (cmtData.success) {
+        setComments(cmtData.comments);
+      }
+    } catch (err) {
+      console.error('Fetch detail error:', err);
     }
-  }, [slug]);
+  };
+
+  useEffect(() => {
+    if (slug) {
+      fetchArticleAndComments();
+    }
+  }, [slug, authUser]);
 
   if (!article) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh', bgcolor: '#080c14' }}>
-        <Typography color="error">文章未找到，或已被下架。</Typography>
+        <Typography color="error">文章正在拉取，或已被下架。</Typography>
       </Box>
     );
   }
 
-  const isVipLocked = article.is_vip_only && !authUser;
+  // 接口中返回的 is_locked 决定了是否遮罩锁定
+  const isVipLocked = (article as any).is_locked;
 
-  const handleSendComment = (e: React.FormEvent) => {
+  const handleSendComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCommentText.trim()) return;
 
-    const newComment: Comment = {
-      id: Date.now(),
-      user: {
-        username: authUser?.username || 'anonymous',
-        nickname: authUser?.nickname || '匿名读者',
-        avatar_url: authUser?.avatar_url || '',
-      },
-      content: newCommentText,
-      created_at: '刚刚',
-      likes_count: 0,
-    };
+    try {
+      const token = localStorage.getItem('lightnews_token');
+      if (!token) {
+        alert('请先登录再发表评论');
+        return;
+      }
 
-    setComments((prev) => [newComment, ...prev]);
-    setNewCommentText('');
+      const res = await fetch(`${API_BASE}/api/interactions/comment/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          article_slug: slug,
+          content: newCommentText
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message || '评论提交成功，等待后台审核！');
+        setNewCommentText('');
+        // 重新拉取
+        fetchArticleAndComments();
+      } else {
+        alert(data.message || '评论发表失败');
+      }
+    } catch (err) {
+      console.error('Comment submit error:', err);
+    }
   };
 
-  const handleLike = () => {
-    setLiked((prev) => !prev);
-    if (article) {
-      article.likes_count += liked ? -1 : 1;
+  const handleLike = async () => {
+    if (!authUser) {
+      alert('点赞功能仅在登录后开放！');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('lightnews_token');
+      const res = await fetch(`${API_BASE}/api/interactions/like/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          target_type: 'article',
+          target_id: article.id
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setLiked(data.liked);
+        setArticle(prev => prev ? { ...prev, likes_count: data.likes_count } : null);
+      }
+    } catch (err) {
+      console.error('Like toggle error:', err);
     }
   };
 
   const handleBookmark = () => {
+    if (!authUser) {
+      alert('请先登录再进行收藏');
+      return;
+    }
     setBookmarked((prev) => !prev);
   };
 
@@ -180,7 +222,7 @@ export const ArticleDetail: React.FC = () => {
               {isVipLocked ? (
                 <>
                   <Typography variant="body1" sx={{ mb: 2 }}>
-                    {article.content.substring(0, 150)}...
+                    {article.content}
                   </Typography>
                   
                   {/* VIP 遮蔽锁屏 */}
@@ -216,7 +258,7 @@ export const ArticleDetail: React.FC = () => {
                       本内容为创投独家专栏深度解析
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#94a3b8', mb: 3, maxWidth: 450 }}>
-                      Light News 独家深度创投研报。包含全球科技巨头布局、细分赛道梳理与初创企业评级，登录或升级会员即可解锁全文。
+                      LIGHT IN THE BRAIN 独家深度创投研报。包含全球科技巨头布局、细分赛道梳理与初创企业评级，登录或升级会员即可解锁全文。
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 2 }}>
                       <Button variant="contained" color="primary" onClick={() => navigate('/login')} sx={{ color: '#fff', px: 4 }}>
@@ -244,7 +286,7 @@ export const ArticleDetail: React.FC = () => {
           {/* 评论区 */}
           <Box sx={{ mt: 4 }}>
             <Typography variant="h5" sx={{ color: '#f8fafc', fontWeight: 700, mb: 3 }}>
-              评论互动 ({comments.length + (comments[0]?.replies?.length || 0)})
+              评论互动 ({comments.length + comments.reduce((acc, c) => acc + (c.replies?.length || 0), 0)})
             </Typography>
 
             {/* 发送评论框 */}
@@ -278,12 +320,12 @@ export const ArticleDetail: React.FC = () => {
                 <Paper key={cmt.id} sx={{ p: 2.5, bgcolor: '#101726', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
                   <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
                     <Avatar sx={{ bgcolor: 'primary.main', width: 36, height: 36 }}>
-                      {cmt.user.nickname.charAt(0)}
+                      {cmt.user.nickname?.charAt(0) || cmt.user.username.charAt(0)}
                     </Avatar>
                     <Box sx={{ flexGrow: 1 }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                         <Typography variant="subtitle2" sx={{ color: '#f8fafc', fontWeight: 600 }}>
-                          {cmt.user.nickname}
+                          {cmt.user.nickname || cmt.user.username}
                         </Typography>
                         <Typography variant="caption" sx={{ color: '#64748b' }}>
                           {cmt.created_at}
@@ -304,12 +346,12 @@ export const ArticleDetail: React.FC = () => {
                         <Box key={reply.id} sx={{ mt: 2, pl: 2, borderLeft: '2px solid rgba(255, 255, 255, 0.06)' }}>
                           <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
                             <Avatar sx={{ bgcolor: '#475569', width: 28, height: 28, fontSize: '0.75rem' }}>
-                              {reply.user.nickname.charAt(0)}
+                              {reply.user.nickname?.charAt(0) || reply.user.username.charAt(0)}
                             </Avatar>
                             <Box sx={{ flexGrow: 1 }}>
                               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                                 <Typography variant="caption" sx={{ color: '#f8fafc', fontWeight: 600 }}>
-                                  {reply.user.nickname}
+                                  {reply.user.nickname || reply.user.username}
                                 </Typography>
                                 <Typography variant="caption" sx={{ color: '#64748b' }}>
                                   {reply.created_at}
@@ -350,3 +392,4 @@ export const ArticleDetail: React.FC = () => {
     </Container>
   );
 };
+export default ArticleDetail;

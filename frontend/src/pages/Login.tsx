@@ -84,7 +84,7 @@ export const Login: React.FC = () => {
               <LockOutlinedIcon fontSize="medium" />
             </Box>
             <Typography variant="h4" sx={{ fontWeight: 900, color: '#f8fafc', mb: 1, letterSpacing: '-0.025em' }}>
-              LIGHT NEWS • TECH
+              LIGHT IN THE BRAIN
             </Typography>
             <Typography variant="body2" sx={{ color: '#64748b', textAlign: 'center' }}>
               全球前沿科技创投快讯与硬科技研究洞察

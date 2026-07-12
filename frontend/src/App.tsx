@@ -40,7 +40,7 @@ const AppNavigation: React.FC = () => {
                 gap: 1
               }}
             >
-              LIGHT NEWS <span style={{ fontSize: '0.75rem', padding: '2px 6px', backgroundColor: 'rgba(0,102,255,0.12)', color: '#0066ff', borderRadius: 4, fontWeight: 700 }}>TECH VC</span>
+              LIGHT IN THE BRAIN <span style={{ fontSize: '0.75rem', padding: '2px 6px', backgroundColor: 'rgba(0,102,255,0.12)', color: '#0066ff', borderRadius: 4, fontWeight: 700 }}>TECH VC</span>
             </Typography>
 
             {/* 右侧用户菜单 */}
@@ -138,10 +138,10 @@ export const AppContent: React.FC = () => {
       <Box component="footer" sx={{ bgcolor: '#0f172a', borderTop: '1px solid rgba(255,255,255,0.05)', py: 4, mt: 'auto', textAlign: 'center', color: '#64748b' }}>
         <Container maxWidth="lg">
           <Typography variant="body2" sx={{ fontWeight: 600, color: '#94a3b8', mb: 1 }}>
-            LIGHT NEWS 科技创投深度资讯门户
+            LIGHT IN THE BRAIN 科技创投深度资讯门户
           </Typography>
           <Typography variant="caption" sx={{ display: 'block' }}>
-            © 2026 LIGHTNEWS TECH. All rights reserved. 创投快报均来自一手及公开信披，不作为股权融资投资决策依据。
+            © 2026 LIGHT IN THE BRAIN. All rights reserved. 创投快报均来自一手及公开信披，不作为股权融资投资决策依据。
           </Typography>
         </Container>
       </Box>

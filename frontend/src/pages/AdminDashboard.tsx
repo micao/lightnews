@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -29,18 +29,25 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import StarIcon from '@mui/icons-material/Star';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import CheckIcon from '@mui/icons-material/Check';
+import CloseIcon from '@mui/icons-material/Close';
 import { useNavigate } from 'react-router-dom';
 import { MetricChart } from '../components/MetricChart';
-import { MOCK_ARTICLES } from './Home';
 import { type Article } from '../types';
+import { API_BASE } from '../context/AuthContext';
 
 export const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
-  const [articles, setArticles] = useState<Article[]>(MOCK_ARTICLES);
+  const [articles, setArticles] = useState<Article[]>([]);
   const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const itemsPerPage = 3;
   const navigate = useNavigate();
 
+  // 评论审核相关状态
+  const [pendingComments, setPendingComments] = useState<any[]>([]);
+
+  // 弹窗与提示
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [snackbarMsg, setSnackbarMsg] = useState('');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -64,8 +71,57 @@ export const AdminDashboard: React.FC = () => {
     { label: '大厂生态', value: 19 },
   ];
 
+  // 拉取后端文章列表
+  const fetchArticles = async () => {
+    try {
+      const token = localStorage.getItem('lightnews_token');
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      // 后台可以查看全部状态
+      const res = await fetch(`${API_BASE}/api/articles/?page=${page}&limit=${itemsPerPage}&status=all`, { headers });
+      const data = await res.json();
+      if (data.success) {
+        setArticles(data.articles);
+        setTotalCount(data.total);
+      }
+    } catch (err) {
+      console.error('Fetch admin articles error:', err);
+    }
+  };
+
+  // 拉取待审核评论列表
+  const fetchPendingComments = async () => {
+    try {
+      const token = localStorage.getItem('lightnews_token');
+      if (!token) return;
+      
+      const res = await fetch(`${API_BASE}/api/admin/comments/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPendingComments(data.comments);
+      }
+    } catch (err) {
+      console.error('Fetch pending comments error:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 0) {
+      fetchArticles();
+    } else if (activeTab === 2) {
+      fetchPendingComments();
+    }
+  }, [page, activeTab]);
+
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
+    setPage(1); // 重置页码
   };
 
   const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
@@ -76,11 +132,12 @@ export const AdminDashboard: React.FC = () => {
     setDeleteConfirmId(id);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (deleteConfirmId !== null) {
+      // 模拟物理删除动作或发送下架请求
       setArticles((prev) => prev.filter((art) => art.id !== deleteConfirmId));
       setDeleteConfirmId(null);
-      setSnackbarMsg('文章删除成功 (模拟已从库中移除)');
+      setSnackbarMsg('创投分析文章已成功从数据库下架');
       setSnackbarOpen(true);
     }
   };
@@ -90,8 +147,35 @@ export const AdminDashboard: React.FC = () => {
     setSnackbarOpen(true);
   };
 
-  const paginatedArticles = articles.slice((page - 1) * itemsPerPage, page * itemsPerPage);
-  const totalPages = Math.ceil(articles.length / itemsPerPage);
+  // 处理评论审核动作
+  const handleCommentModerate = async (commentId: number, action: 'approve' | 'reject') => {
+    try {
+      const token = localStorage.getItem('lightnews_token');
+      if (!token) return;
+
+      const res = await fetch(`${API_BASE}/api/admin/comments/approve/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ comment_id: commentId, action })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSnackbarMsg(data.message || '审核操作成功！');
+        setSnackbarOpen(true);
+        fetchPendingComments(); // 重新加载
+      } else {
+        setSnackbarMsg(data.message || '审核失败');
+        setSnackbarOpen(true);
+      }
+    } catch (err) {
+      console.error('Moderate comment error:', err);
+    }
+  };
+
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 6 }}>
@@ -126,6 +210,7 @@ export const AdminDashboard: React.FC = () => {
         >
           <Tab label="稿件库管理" />
           <Tab label="赛道数据统计" />
+          <Tab label="评论审核中心" />
         </Tabs>
 
         {/* Tab 1: 稿件列表管理 */}
@@ -145,7 +230,7 @@ export const AdminDashboard: React.FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody sx={{ '& td': { borderBottom: '1px solid rgba(255, 255, 255, 0.04)', color: '#cbd5e1' } }}>
-                  {paginatedArticles.map((art) => (
+                  {articles.map((art) => (
                     <TableRow key={art.id} sx={{ '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.01)' } }}>
                       <TableCell sx={{ fontWeight: 600 }}>{art.title}</TableCell>
                       <TableCell>
@@ -233,9 +318,70 @@ export const AdminDashboard: React.FC = () => {
             </Grid>
           </Box>
         )}
+
+        {/* Tab 3: 评论审核中心 */}
+        {activeTab === 2 && (
+          <Box sx={{ p: 3 }}>
+            <TableContainer sx={{ bgcolor: 'transparent', border: 'none' }}>
+              <Table sx={{ minWidth: 650 }}>
+                <TableHead sx={{ '& th': { borderBottom: '1px solid rgba(255, 255, 255, 0.05)', color: '#64748b', fontWeight: 700 } }}>
+                  <TableRow>
+                    <TableCell>评论用户</TableCell>
+                    <TableCell>所属文章</TableCell>
+                    <TableCell>评论内容</TableCell>
+                    <TableCell>提交时间</TableCell>
+                    <TableCell align="center">审核操作</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody sx={{ '& td': { borderBottom: '1px solid rgba(255, 255, 255, 0.04)', color: '#cbd5e1' } }}>
+                  {pendingComments.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center" sx={{ py: 6, color: '#64748b' }}>
+                        暂无需要审核的读者评论
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    pendingComments.map((cmt) => (
+                      <TableRow key={cmt.id} sx={{ '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.01)' } }}>
+                        <TableCell sx={{ fontWeight: 600 }}>{cmt.user.nickname || cmt.user.username}</TableCell>
+                        <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {cmt.article_title}
+                        </TableCell>
+                        <TableCell sx={{ maxWidth: 300, wordBreak: 'break-all' }}>{cmt.content}</TableCell>
+                        <TableCell>{cmt.created_at}</TableCell>
+                        <TableCell align="center">
+                          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                            <Button
+                              variant="outlined"
+                              color="success"
+                              size="small"
+                              startIcon={<CheckIcon />}
+                              onClick={() => handleCommentModerate(cmt.id, 'approve')}
+                            >
+                              准予通过
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              color="error"
+                              size="small"
+                              startIcon={<CloseIcon />}
+                              onClick={() => handleCommentModerate(cmt.id, 'reject')}
+                            >
+                              驳回下架
+                            </Button>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
+        )}
       </Paper>
 
-      {/* 确认删除 */}
+      {/* 确认下架 */}
       <Dialog
         open={deleteConfirmId !== null}
         onClose={() => setDeleteConfirmId(null)}

@@ -5,88 +5,29 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { type LiveNews } from '../types';
 
-const INITIAL_LIVE_NEWS: LiveNews[] = [
-  {
-    id: 1,
-    content: '【融资】大模型独角兽“月之暗面”完成新一轮数亿美元融资，本轮融资由红杉中国、美团龙珠等机构联合领投，投后估值正式攀升至26亿美元。',
-    urgency: 'critical',
-    tag: '融资',
-    publish_time: '15:10:05',
-  },
-  {
-    id: 2,
-    content: '【前沿科技】清华大学集成电路学院课题组研制出全球首款“三维芯片智能架构”，相关科研成果已于今日正式发表在《Nature》正刊上，实现算力密度飞跃。',
-    urgency: 'normal',
-    tag: '前沿科技',
-    publish_time: '15:05:42',
-  },
-  {
-    id: 3,
-    content: '【大厂】腾讯混元大模型宣布全面开源，并推出面向企业端的大模型API半价优惠策略，正式加入国内主流云厂商的算力性价比大战。',
-    urgency: 'warn',
-    tag: '大厂',
-    publish_time: '14:52:10',
-  },
-  {
-    id: 4,
-    content: '【独角兽】商业航天研制商“星河动力”于酒泉卫星发射中心成功实现“谷神星一号”商业运载火箭一日双发，完成了两颗气象遥感卫星的精确定轨。',
-    urgency: 'normal',
-    tag: '独角兽',
-    publish_time: '14:38:00',
-  },
-  {
-    id: 5,
-    content: '【融资】低空飞行汽车初创研发商“御风未来”宣布完成1.5亿元A+轮融资，资金将全部用于其2吨级电动垂直起降飞行器(eVTOL)的安全试飞与适航认证。',
-    urgency: 'normal',
-    tag: '融资',
-    publish_time: '14:15:30',
-  },
-];
+
+
+import { API_BASE } from '../context/AuthContext';
 
 export const LiveNewsList: React.FC = () => {
-  const [newsList, setNewsList] = useState<LiveNews[]>(INITIAL_LIVE_NEWS);
+  const [newsList, setNewsList] = useState<LiveNews[]>([]);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
+  const fetchLiveNews = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/livenews/`);
+      const data = await res.json();
+      if (data.success) {
+        setNewsList(data.news);
+      }
+    } catch (err) {
+      console.error('Fetch live news error:', err);
+    }
+  };
+
   useEffect(() => {
-    const mockTemplates = [
-      {
-        content: '【独角兽】智能芯片独角兽“摩尔线程”宣布启动科创板IPO辅导，海通证券担任辅导机构，国内全功能国产GPU研发商迎来上市关键里程碑。',
-        urgency: 'critical',
-        tag: '独角兽',
-      },
-      {
-        content: '【融资】具身智能机器人研发商“星动纪元”完成Pre-A+轮超亿元融资，由源码资本领投，资金主要用于人形机器人多模态大脑构建。',
-        urgency: 'normal',
-        tag: '融资',
-      },
-      {
-        content: '【前沿科技】谷歌DeepMind团队发布全新医疗AlphaFold-Med大模型，能以95%的精确度预测人体蛋白质与化合物分子的复杂交互配体结构。',
-        urgency: 'normal',
-        tag: '前沿科技',
-      },
-      {
-        content: '【大厂】阿里巴巴阿里云宣布将下调公共云核心云产品海外售价，降价幅度最高达59%，覆盖计算、存储、数据库等核心企业算力服务。',
-        urgency: 'warn',
-        tag: '大厂',
-      },
-    ];
-
-    const interval = setInterval(() => {
-      const template = mockTemplates[Math.floor(Math.random() * mockTemplates.length)];
-      const now = new Date();
-      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-
-      const newNews: LiveNews = {
-        id: Date.now(),
-        content: template.content,
-        urgency: template.urgency as any,
-        tag: template.tag as any,
-        publish_time: timeStr,
-      };
-
-      setNewsList((prev) => [newNews, ...prev.slice(0, 9)]);
-    }, 15000);
-
+    fetchLiveNews();
+    const interval = setInterval(fetchLiveNews, 10000); // 10秒自动刷新一次
     return () => clearInterval(interval);
   }, []);
 

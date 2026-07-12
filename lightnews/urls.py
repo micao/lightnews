@@ -1,22 +1,42 @@
-"""
-URL configuration for lightnews project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/6.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import path
+from users.views import register_view, login_view, profile_view
+from news.views import article_list_view, article_detail_view, live_news_list_view, seed_data_view
+from interactions.views import (
+    comment_list_view,
+    comment_create_view,
+    like_toggle_view,
+    admin_comments_view,
+    admin_comment_approve_view
+)
+
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
+def comment_dispatch(request):
+    if request.method == 'POST':
+        return comment_create_view(request)
+    return comment_list_view(request)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    
+    # 鉴权
+    path('api/auth/register/', register_view),
+    path('api/auth/login/', login_view),
+    path('api/auth/profile/', profile_view),
+    
+    # 新闻与快讯
+    path('api/articles/', article_list_view),
+    path('api/articles/<slug:slug>/', article_detail_view),
+    path('api/livenews/', live_news_list_view),
+    path('api/seed/', seed_data_view),
+    
+    # 社交互动
+    path('api/interactions/comment/', comment_dispatch),
+    path('api/interactions/like/', like_toggle_view),
+    
+    # 管理员后台
+    path('api/admin/comments/', admin_comments_view),
+    path('api/admin/comments/approve/', admin_comment_approve_view),
 ]

@@ -42,3 +42,12 @@ class Membership(models.Model):
         indexes = [
             models.Index(fields=['user', 'tier'], name='idx_mbr_user_tier')
         ]
+
+class UserToken(models.Model):
+    """用户鉴权 Token 表"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tokens')
+    token = models.CharField(max_length=64, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'user_tokens'
