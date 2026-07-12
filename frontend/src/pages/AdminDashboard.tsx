@@ -35,8 +35,10 @@ import { useNavigate } from 'react-router-dom';
 import { MetricChart } from '../components/MetricChart';
 import { type Article } from '../types';
 import { API_BASE } from '../context/AuthContext';
+import { useI18n } from '../context/I18nContext';
 
 export const AdminDashboard: React.FC = () => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState(0);
   const [articles, setArticles] = useState<Article[]>([]);
   const [page, setPage] = useState(1);
@@ -54,21 +56,21 @@ export const AdminDashboard: React.FC = () => {
 
   // 创投统计指标：每周收到的商业计划书 (Business Proposals) 数量
   const proposalsTrendData = [
-    { label: '周一', value: 14 },
-    { label: '周二', value: 28 },
-    { label: '周三', value: 35 },
-    { label: '周四', value: 42 },
-    { label: '周五', value: 58 },
-    { label: '周六', value: 21 },
-    { label: '周日', value: 30 },
+    { label: 'Mon', value: 14 },
+    { label: 'Tue', value: 28 },
+    { label: 'Wed', value: 35 },
+    { label: 'Thu', value: 42 },
+    { label: 'Fri', value: 58 },
+    { label: 'Sat', value: 21 },
+    { label: 'Sun', value: 30 },
   ];
 
   // 创投统计指标：各赛道稿件发布数量分布
   const sectorShareData = [
-    { label: '前沿科技', value: 45 },
-    { label: '独角兽动态', value: 28 },
-    { label: 'VC/PE观察', value: 32 },
-    { label: '大厂生态', value: 19 },
+    { label: t('Frontier Tech'), value: 45 },
+    { label: t('Unicorn Dynamics'), value: 28 },
+    { label: t('VC/PE Insights'), value: 32 },
+    { label: t('Console'), value: 19 },
   ];
 
   // 拉取后端文章列表
@@ -134,16 +136,15 @@ export const AdminDashboard: React.FC = () => {
 
   const handleConfirmDelete = async () => {
     if (deleteConfirmId !== null) {
-      // 模拟物理删除动作或发送下架请求
       setArticles((prev) => prev.filter((art) => art.id !== deleteConfirmId));
       setDeleteConfirmId(null);
-      setSnackbarMsg('创投分析文章已成功从数据库下架');
+      setSnackbarMsg(t('Article unpublished successfully'));
       setSnackbarOpen(true);
     }
   };
 
   const handleEditClick = (title: string) => {
-    setSnackbarMsg(`正在打开文章《${title.substring(0, 10)}...》的编辑面板`);
+    setSnackbarMsg(`${t('Opening edit panel for')}《${title.substring(0, 10)}...》`);
     setSnackbarOpen(true);
   };
 
@@ -163,11 +164,11 @@ export const AdminDashboard: React.FC = () => {
       });
       const data = await res.json();
       if (data.success) {
-        setSnackbarMsg(data.message || '审核操作成功！');
+        setSnackbarMsg(data.message || t('Audit action successful'));
         setSnackbarOpen(true);
         fetchPendingComments(); // 重新加载
       } else {
-        setSnackbarMsg(data.message || '审核失败');
+        setSnackbarMsg(data.message || t('Audit action failed'));
         setSnackbarOpen(true);
       }
     } catch (err) {
@@ -186,12 +187,12 @@ export const AdminDashboard: React.FC = () => {
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h3" sx={{ color: '#f8fafc', fontWeight: 850 }}>
-            创投控制台管理后台
+            {t('Dashboard Title')}
           </Typography>
         </Box>
 
         <Button variant="contained" color="primary" sx={{ color: '#fff' }}>
-          发布创投分析
+          {t('Publish Analysis')}
         </Button>
       </Box>
 
@@ -208,9 +209,9 @@ export const AdminDashboard: React.FC = () => {
             '& .MuiTab-root': { fontWeight: 600, color: '#94a3b8' },
           }}
         >
-          <Tab label="稿件库管理" />
-          <Tab label="赛道数据统计" />
-          <Tab label="评论审核中心" />
+          <Tab label={t('Article Management')} />
+          <Tab label={t('Sector Stats')} />
+          <Tab label={t('Comment Moderation')} />
         </Tabs>
 
         {/* Tab 1: 稿件列表管理 */}
@@ -220,13 +221,13 @@ export const AdminDashboard: React.FC = () => {
               <Table sx={{ minWidth: 650 }}>
                 <TableHead sx={{ '& th': { borderBottom: '1px solid rgba(255, 255, 255, 0.05)', color: '#64748b', fontWeight: 700 } }}>
                   <TableRow>
-                    <TableCell>文章标题</TableCell>
-                    <TableCell>大类分类</TableCell>
-                    <TableCell align="right">浏览量</TableCell>
-                    <TableCell align="right">收藏数</TableCell>
-                    <TableCell>专栏属性</TableCell>
-                    <TableCell>发布时间</TableCell>
-                    <TableCell align="center">操作</TableCell>
+                    <TableCell>{t('Article Title')}</TableCell>
+                    <TableCell>{t('Category')}</TableCell>
+                    <TableCell align="right">{t('Views')}</TableCell>
+                    <TableCell align="right">{t('Likes')}</TableCell>
+                    <TableCell>{t('VIP Type')}</TableCell>
+                    <TableCell>{t('Publish Time')}</TableCell>
+                    <TableCell align="center">{t('Action')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody sx={{ '& td': { borderBottom: '1px solid rgba(255, 255, 255, 0.04)', color: '#cbd5e1' } }}>
@@ -234,7 +235,7 @@ export const AdminDashboard: React.FC = () => {
                     <TableRow key={art.id} sx={{ '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.01)' } }}>
                       <TableCell sx={{ fontWeight: 600 }}>{art.title}</TableCell>
                       <TableCell>
-                        <Chip label={art.category.name} size="small" sx={{ bgcolor: 'rgba(255, 255, 255, 0.04)', color: '#94a3b8' }} />
+                        <Chip label={t(art.category.name)} size="small" sx={{ bgcolor: 'rgba(255, 255, 255, 0.04)', color: '#94a3b8' }} />
                       </TableCell>
                       <TableCell align="right" sx={{ fontFamily: 'monospace' }}>
                         {art.views_count.toLocaleString()}
@@ -246,12 +247,12 @@ export const AdminDashboard: React.FC = () => {
                         {art.is_vip_only ? (
                           <Chip
                             icon={<StarIcon style={{ color: '#000', fontSize: 12 }} />}
-                            label="独家"
+                            label={t('Exclusive')}
                             size="small"
                             sx={{ bgcolor: 'secondary.main', color: '#000', fontWeight: 700 }}
                           />
                         ) : (
-                          <Chip label="免费" size="small" variant="outlined" sx={{ color: '#64748b', borderColor: '#475569' }} />
+                          <Chip label={t('Free')} size="small" variant="outlined" sx={{ color: '#64748b', borderColor: '#475569' }} />
                         )}
                       </TableCell>
                       <TableCell>{art.publish_at.split(' ')[0]}</TableCell>
@@ -299,20 +300,20 @@ export const AdminDashboard: React.FC = () => {
             <Grid container spacing={3}>
               <Grid size={{ xs: 12, md: 6 }}>
                 <MetricChart
-                  title="本周收到初创项目商业计划书(BP)趋势"
+                  title={t('Weekly BP Trend')}
                   data={proposalsTrendData}
                   type="line"
                   color="#0066ff"
-                  valueSuffix="份BP"
+                  valueSuffix={t('BP Suffix')}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
                 <MetricChart
-                  title="创投快报各细分赛道稿件发布数量分布"
+                  title={t('Sector Articles Volume')}
                   data={sectorShareData}
                   type="bar"
                   color="#10b981"
-                  valueSuffix="篇"
+                  valueSuffix={t('Articles Suffix')}
                 />
               </Grid>
             </Grid>
@@ -326,18 +327,18 @@ export const AdminDashboard: React.FC = () => {
               <Table sx={{ minWidth: 650 }}>
                 <TableHead sx={{ '& th': { borderBottom: '1px solid rgba(255, 255, 255, 0.05)', color: '#64748b', fontWeight: 700 } }}>
                   <TableRow>
-                    <TableCell>评论用户</TableCell>
-                    <TableCell>所属文章</TableCell>
-                    <TableCell>评论内容</TableCell>
-                    <TableCell>提交时间</TableCell>
-                    <TableCell align="center">审核操作</TableCell>
+                    <TableCell>{t('Moderation User')}</TableCell>
+                    <TableCell>{t('Belongs Article')}</TableCell>
+                    <TableCell>{t('Comment Content')}</TableCell>
+                    <TableCell>{t('Publish Time')}</TableCell>
+                    <TableCell align="center">{t('Action')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody sx={{ '& td': { borderBottom: '1px solid rgba(255, 255, 255, 0.04)', color: '#cbd5e1' } }}>
                   {pendingComments.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} align="center" sx={{ py: 6, color: '#64748b' }}>
-                        暂无需要审核的读者评论
+                        {t('No Pending Comments')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -358,7 +359,7 @@ export const AdminDashboard: React.FC = () => {
                               startIcon={<CheckIcon />}
                               onClick={() => handleCommentModerate(cmt.id, 'approve')}
                             >
-                              准予通过
+                              {t('Approve')}
                             </Button>
                             <Button
                               variant="outlined"
@@ -367,7 +368,7 @@ export const AdminDashboard: React.FC = () => {
                               startIcon={<CloseIcon />}
                               onClick={() => handleCommentModerate(cmt.id, 'reject')}
                             >
-                              驳回下架
+                              {t('Reject')}
                             </Button>
                           </Box>
                         </TableCell>
@@ -387,18 +388,18 @@ export const AdminDashboard: React.FC = () => {
         onClose={() => setDeleteConfirmId(null)}
         sx={{ '& .MuiDialog-paper': { bgcolor: '#101726', border: '1px solid rgba(255, 255, 255, 0.05)', backgroundImage: 'none' } }}
       >
-        <DialogTitle sx={{ color: '#f8fafc', fontWeight: 700 }}>确认下架该创投分析吗？</DialogTitle>
+        <DialogTitle sx={{ color: '#f8fafc', fontWeight: 700 }}>{t('Unpublish Confirm')}</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ color: '#94a3b8' }}>
-            下架后该深度分析文章将不可在首页前台展现，所有相关的读者评论将物理级级联清空。
+            {t('Unpublish Desc')}
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ p: 2.5 }}>
           <Button onClick={() => setDeleteConfirmId(null)} sx={{ color: '#94a3b8' }}>
-            取消
+            {t('Cancel')}
           </Button>
           <Button onClick={handleConfirmDelete} variant="contained" color="error" autoFocus>
-            确认下架
+            {t('Confirm')}
           </Button>
         </DialogActions>
       </Dialog>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useI18n } from '../context/I18nContext';
 import {
   Box,
   Card,
@@ -17,6 +18,7 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import PersonIcon from '@mui/icons-material/Person';
 
 export const Login: React.FC = () => {
+  const { t } = useI18n();
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -39,10 +41,10 @@ export const Login: React.FC = () => {
       if (success) {
         navigate(from, { replace: true });
       } else {
-        setError('模拟身份认证失败，请重试。');
+        setError(t('Auth Error'));
       }
     } catch (err) {
-      setError('登录时发生网络错误。');
+      setError(t('Network Error'));
     } finally {
       setLoading(false);
     }
@@ -84,10 +86,10 @@ export const Login: React.FC = () => {
               <LockOutlinedIcon fontSize="medium" />
             </Box>
             <Typography variant="h4" sx={{ fontWeight: 900, color: '#f8fafc', mb: 1, letterSpacing: '-0.025em' }}>
-              LIGHT IN THE BRAIN
+              {t('LIGHT IN THE BRAIN')}
             </Typography>
             <Typography variant="body2" sx={{ color: '#64748b', textAlign: 'center' }}>
-              全球前沿科技创投快讯与硬科技研究洞察
+              {t('Venture Research Insight')}
             </Typography>
           </Box>
 
@@ -104,12 +106,12 @@ export const Login: React.FC = () => {
             sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
           >
             <TextField
-              label="用户名"
+              label={t('Username')}
               variant="outlined"
               fullWidth
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="请输入您的用户名"
+              placeholder={t('Enter Username')}
               sx={{
                 '& .MuiInputLabel-root': { color: '#64748b' },
                 '& .MuiOutlinedInput-root': {
@@ -119,13 +121,13 @@ export const Login: React.FC = () => {
               }}
             />
             <TextField
-              label="密码"
+              label={t('Password')}
               type="password"
               variant="outlined"
               fullWidth
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="请输入密码 (模拟登录可留空)"
+              placeholder={t('Enter Password')}
               sx={{
                 '& .MuiInputLabel-root': { color: '#64748b' },
                 '& .MuiOutlinedInput-root': {
@@ -143,13 +145,13 @@ export const Login: React.FC = () => {
               disabled={loading}
               sx={{ color: '#fff', py: 1.2, mt: 1 }}
             >
-              {loading ? <CircularProgress size={24} /> : '普通用户登录'}
+              {loading ? <CircularProgress size={24} /> : t('Regular User Login')}
             </Button>
           </Box>
 
           <Divider sx={{ my: 3, borderColor: 'rgba(255, 255, 255, 0.05)' }}>
             <Typography variant="caption" sx={{ color: '#475569' }}>
-              快捷调试与多角色模拟
+              {t('Debug Shortcuts')}
             </Typography>
           </Divider>
 
@@ -170,7 +172,7 @@ export const Login: React.FC = () => {
                 },
               }}
             >
-              模拟读者
+              {t('Mock Reader')}
             </Button>
             <Button
               variant="outlined"
@@ -188,7 +190,7 @@ export const Login: React.FC = () => {
                 },
               }}
             >
-              模拟管理员
+              {t('Mock Admin')}
             </Button>
           </Box>
         </CardContent>

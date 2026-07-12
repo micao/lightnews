@@ -22,9 +22,11 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import StarIcon from '@mui/icons-material/Star';
 import LockIcon from '@mui/icons-material/Lock';
 import { useAuth, API_BASE } from '../context/AuthContext';
+import { useI18n } from '../context/I18nContext';
 import { type Article, type Comment } from '../types';
 
 export const ArticleDetail: React.FC = () => {
+  const { t } = useI18n();
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
@@ -70,7 +72,7 @@ export const ArticleDetail: React.FC = () => {
   if (!article) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh', bgcolor: '#080c14' }}>
-        <Typography color="error">文章正在拉取，或已被下架。</Typography>
+        <Typography color="error">{t('Loading article or it has been removed')}</Typography>
       </Box>
     );
   }
@@ -85,7 +87,7 @@ export const ArticleDetail: React.FC = () => {
     try {
       const token = localStorage.getItem('lightnews_token');
       if (!token) {
-        alert('请先登录再发表评论');
+        alert(t('Please log in first to write comments'));
         return;
       }
 
@@ -102,12 +104,12 @@ export const ArticleDetail: React.FC = () => {
       });
       const data = await res.json();
       if (data.success) {
-        alert(data.message || '评论提交成功，等待后台审核！');
+        alert(data.message || t('Comment Success'));
         setNewCommentText('');
         // 重新拉取
         fetchArticleAndComments();
       } else {
-        alert(data.message || '评论发表失败');
+        alert(data.message || t('Comment Failed'));
       }
     } catch (err) {
       console.error('Comment submit error:', err);
@@ -116,7 +118,7 @@ export const ArticleDetail: React.FC = () => {
 
   const handleLike = async () => {
     if (!authUser) {
-      alert('点赞功能仅在登录后开放！');
+      alert(t('Likes open for logged in only'));
       return;
     }
 
@@ -145,7 +147,7 @@ export const ArticleDetail: React.FC = () => {
 
   const handleBookmark = () => {
     if (!authUser) {
-      alert('请先登录再进行收藏');
+      alert(t('Please log in first to bookmark'));
       return;
     }
     setBookmarked((prev) => !prev);
@@ -159,7 +161,7 @@ export const ArticleDetail: React.FC = () => {
         onClick={() => navigate('/')}
         sx={{ color: '#94a3b8', mb: 3, '&:hover': { color: 'primary.main' } }}
       >
-        返回首页
+        {t('Back to Home')}
       </Button>
 
       <Grid container spacing={3}>
@@ -167,11 +169,11 @@ export const ArticleDetail: React.FC = () => {
         <Grid size={{ xs: 12, md: 8 }}>
           <Paper sx={{ p: 4, bgcolor: '#101726', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
             <Box sx={{ mb: 2 }}>
-              <Chip label={article.category.name} color="primary" variant="outlined" size="small" sx={{ mb: 2, borderColor: 'primary.main', color: 'primary.main' }} />
+              <Chip label={t(article.category.name)} color="primary" variant="outlined" size="small" sx={{ mb: 2, borderColor: 'primary.main', color: 'primary.main' }} />
               {article.is_vip_only && (
                 <Chip
                   icon={<StarIcon style={{ color: '#000' }} />}
-                  label="创投独家专栏"
+                  label={t('Exclusive Column')}
                   size="small"
                   sx={{ bgcolor: 'secondary.main', color: '#000', fontWeight: 700, ml: 1 }}
                 />
@@ -193,7 +195,7 @@ export const ArticleDetail: React.FC = () => {
                     {article.author.nickname}
                   </Typography>
                   <Typography variant="caption" sx={{ color: '#64748b' }}>
-                    发布于 {article.publish_at}
+                    {t('Published at')} {article.publish_at}
                   </Typography>
                 </Box>
               </Box>
@@ -255,17 +257,17 @@ export const ArticleDetail: React.FC = () => {
                       <LockIcon sx={{ color: 'primary.main', fontSize: 32 }} />
                     </Box>
                     <Typography variant="h5" sx={{ color: '#f8fafc', fontWeight: 700, mb: 1 }}>
-                      本内容为创投独家专栏深度解析
+                      {t('VIP Lock Title')}
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#94a3b8', mb: 3, maxWidth: 450 }}>
-                      LIGHT IN THE BRAIN 独家深度创投研报。包含全球科技巨头布局、细分赛道梳理与初创企业评级，登录或升级会员即可解锁全文。
+                      {t('VIP Lock Desc')}
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 2 }}>
                       <Button variant="contained" color="primary" onClick={() => navigate('/login')} sx={{ color: '#fff', px: 4 }}>
-                        登录账户
+                        {t('Login Account')}
                       </Button>
                       <Button variant="outlined" color="secondary" sx={{ px: 3 }}>
-                        申请加入VIP
+                        {t('Apply VIP')}
                       </Button>
                     </Box>
                   </Box>
@@ -276,7 +278,7 @@ export const ArticleDetail: React.FC = () => {
                     {article.content}
                   </Typography>
                   <Typography variant="body1" sx={{ mb: 2 }}>
-                    随着未来三个季度全球主要云大厂资本开支在AI模型落地上的比拼，初创企业的估值将逐步进入“挤水”周期。我们将持续跟踪硬科技、商业航天和AI垂直细分应用赛道，敬请锁定自选看盘与分析后台。
+                    {t('Venture End Warning')}
                   </Typography>
                 </>
               )}
@@ -286,7 +288,7 @@ export const ArticleDetail: React.FC = () => {
           {/* 评论区 */}
           <Box sx={{ mt: 4 }}>
             <Typography variant="h5" sx={{ color: '#f8fafc', fontWeight: 700, mb: 3 }}>
-              评论互动 ({comments.length + comments.reduce((acc, c) => acc + (c.replies?.length || 0), 0)})
+              {t('Comments')} ({comments.length + comments.reduce((acc, c) => acc + (c.replies?.length || 0), 0)})
             </Typography>
 
             {/* 发送评论框 */}
@@ -295,7 +297,7 @@ export const ArticleDetail: React.FC = () => {
                 fullWidth
                 multiline
                 rows={3}
-                placeholder={authUser ? "输入您的专业财经见解..." : "登录后发表您的见解..."}
+                placeholder={authUser ? t('Write comment...') : t('Login to comment')}
                 disabled={!authUser}
                 value={newCommentText}
                 onChange={(e) => setNewCommentText(e.target.value)}
@@ -309,7 +311,7 @@ export const ArticleDetail: React.FC = () => {
               />
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
                 <Button type="submit" variant="contained" color="primary" disabled={!authUser || !newCommentText.trim()} sx={{ color: '#fff', px: 3 }}>
-                  发表评论
+                  {t('Submit Comment')}
                 </Button>
               </Box>
             </Paper>
@@ -337,7 +339,7 @@ export const ArticleDetail: React.FC = () => {
 
                       <Box sx={{ display: 'flex', gap: 2, color: '#64748b' }}>
                         <Button size="small" startIcon={<FavoriteBorderIcon fontSize="small" />} sx={{ color: '#64748b', fontSize: '0.75rem', p: 0 }}>
-                          赞 ({cmt.likes_count})
+                          {t('Likes')} ({cmt.likes_count})
                         </Button>
                       </Box>
 
@@ -377,13 +379,13 @@ export const ArticleDetail: React.FC = () => {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <Paper sx={{ p: 2.5, bgcolor: '#101726', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5, color: 'primary.main' }}>
-                免责声明 & 创投资讯提示
+                {t('Disclaimer')}
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2, lineHeight: 1.6 }}>
-                本报道研究所载的全部内容仅代表分析师个人及机构的研究观点，不构成任何形式的投资建议或直接交易指令。
+                {t('Disclaimer Desc 1')}
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6 }}>
-                一级创投市场风险极高，早期初创企业具有很高的死亡率和较弱的清算保护。请理性判定产业发展阶段与商业模型。
+                {t('Disclaimer Desc 2')}
               </Typography>
             </Paper>
           </Box>

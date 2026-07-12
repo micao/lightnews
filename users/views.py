@@ -24,10 +24,9 @@ def get_authenticated_user(request):
 
 def get_user_roles(user):
     """返回用户的角色列表"""
-    roles = ['ROLE_USER']
-    if user.is_superuser or user.is_staff or user.username == 'admin_editor':
-        roles.append('ROLE_ADMIN_USER')
-    return roles
+    if hasattr(user, 'roles') and isinstance(user.roles, list) and user.roles:
+        return user.roles
+    return ['ROLE_USER']
 
 def serialize_user(user):
     """序列化用户信息"""
@@ -65,11 +64,12 @@ def register_view(request):
         if phone_number and User.objects.filter(phone_number=phone_number).exists():
             return JsonResponse({'success': False, 'message': '手机号已被绑定'}, status=400)
             
-        # 创建用户
+        # 创建用户并保存默认角色
         user = User.objects.create_user(
             username=username,
             password=password,
-            phone_number=phone_number if phone_number else None
+            phone_number=phone_number if phone_number else None,
+            roles=['ROLE_USER']
         )
         
         # 创建 Profile
@@ -119,12 +119,30 @@ def login_view(request):
                 if username == 'admin_editor':
                     user.is_staff = True
                     user.is_superuser = True
+                    user.roles = ['ROLE_USER', 'ROLE_ADMIN_USER']
+                else:
+                    user.roles = ['ROLE_USER']
                 user.save()
                 UserProfile.objects.create(
                     user=user,
                     nickname='系统管理员' if username == 'admin_editor' else username,
                     bio='快捷调试模拟用户'
                 )
+            else:
+                # 检查现有模拟用户以同步角色
+                updated = False
+                if username == 'admin_editor':
+                    if not user.is_superuser or not user.is_staff or 'ROLE_ADMIN_USER' not in user.roles:
+                        user.is_staff = True
+                        user.is_superuser = True
+                        user.roles = ['ROLE_USER', 'ROLE_ADMIN_USER']
+                        updated = True
+                else:
+                    if not user.roles:
+                        user.roles = ['ROLE_USER']
+                        updated = True
+                if updated:
+                    user.save()
         else:
             # 标准密码认证
             user = authenticate(username=username, password=password)

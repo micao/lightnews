@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useI18n } from '../context/I18nContext';
 import { CircularProgress, Box, Typography } from '@mui/material';
 
 interface AdminRouteProps {
@@ -9,6 +10,7 @@ interface AdminRouteProps {
 
 export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   const { user, loading, hasRole } = useAuth();
+  const { t } = useI18n();
   const location = useLocation();
 
   if (loading) {
@@ -25,7 +27,7 @@ export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
       >
         <CircularProgress color="primary" />
         <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
-          正在验证安全权限...
+          {t('Verifying credentials...')}
         </Typography>
       </Box>
     );

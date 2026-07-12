@@ -21,8 +21,10 @@ import StarIcon from '@mui/icons-material/Star';
 import { LiveNewsList } from '../components/LiveNewsList';
 import { type Article } from '../types';
 import { API_BASE } from '../context/AuthContext';
+import { useI18n } from '../context/I18nContext';
 
 export const Home: React.FC = () => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState(0);
   const navigate = useNavigate();
 
@@ -33,7 +35,7 @@ export const Home: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const observerRef = useRef<HTMLDivElement | null>(null);
 
-  const categories = ['全部推荐', '前沿科技', '独角兽动态', 'VC/PE观察'];
+  const categories = ['All Recommendations', 'Frontier Tech', 'Unicorn Dynamics', 'VC/PE Insights'];
   const currentCategory = categories[activeTab];
 
   // 1. 初始化拉取首屏文章
@@ -48,7 +50,13 @@ export const Home: React.FC = () => {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const categoryParam = currentCategory === '全部推荐' ? '' : currentCategory;
+      const categoryMap: Record<string, string> = {
+        'All Recommendations': '',
+        'Frontier Tech': '前沿科技',
+        'Unicorn Dynamics': '独角兽动态',
+        'VC/PE Insights': 'VC/PE观察'
+      };
+      const categoryParam = categoryMap[currentCategory] || '';
       const res = await fetch(
         `${API_BASE}/api/articles/?page=${pageNum}&limit=3&category=${encodeURIComponent(categoryParam)}`,
         { headers }
@@ -131,7 +139,7 @@ export const Home: React.FC = () => {
           }}
         >
           {categories.map((cat, i) => (
-            <Tab key={i} label={cat} />
+            <Tab key={i} label={t(cat)} />
           ))}
         </Tabs>
       </Box>
@@ -175,18 +183,18 @@ export const Home: React.FC = () => {
                     gap: 1,
                   }}
                 >
-                  <Chip label="首发深度" color="primary" size="small" sx={{ fontWeight: 700 }} />
+                  <Chip label={t('Deep Research')} color="primary" size="small" sx={{ fontWeight: 700 }} />
                   {displayedArticles[0].is_vip_only && (
                     <Chip
                       icon={<StarIcon sx={{ color: 'secondary.main !important' }} />}
-                      label="独家"
+                      label={t('Exclusive')}
                       size="small"
                       sx={{ bgcolor: 'rgba(16, 185, 129, 0.15)', color: 'secondary.main', fontWeight: 700 }}
                     />
                   )}
                 </Box>
                 <Typography variant="h3" sx={{ color: 'primary.main', textAlign: 'center', px: 4, fontWeight: 900 }}>
-                  LIGHT IN THE BRAIN
+                  {t('LIGHT IN THE BRAIN')}
                 </Typography>
               </Box>
 
@@ -267,7 +275,7 @@ export const Home: React.FC = () => {
                         }}
                       >
                         <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                          {item.category.name}
+                          {t(item.category.name)}
                         </Typography>
                       </Box>
                     </Grid>
@@ -276,11 +284,11 @@ export const Home: React.FC = () => {
                       <CardContent sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                         <Box>
                           <Box sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
-                            <Chip label={item.category.name} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.04)', color: '#94a3b8', height: 18, fontSize: '0.6875rem' }} />
+                            <Chip label={t(item.category.name)} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.04)', color: '#94a3b8', height: 18, fontSize: '0.6875rem' }} />
                             {item.is_vip_only && (
                               <Chip
                                 icon={<StarIcon sx={{ color: 'secondary.main !important', fontSize: '10px !important' }} />}
-                                label="独家专栏"
+                                label={t('Exclusive Column')}
                                 size="small"
                                 sx={{ bgcolor: 'rgba(16, 185, 129, 0.12)', color: 'secondary.main', height: 18, fontSize: '0.6875rem', fontWeight: 700 }}
                               />
@@ -341,14 +349,14 @@ export const Home: React.FC = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <CircularProgress size={20} color="primary" />
                 <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                  正在获取最新创投资讯...
+                  {t('Loading articles...')}
                 </Typography>
               </Box>
             )}
 
             {!hasMore && displayedArticles.length > 0 && (
               <Typography variant="caption" sx={{ color: '#475569', fontWeight: 600 }}>
-                — 已为您加载全部最新创投快报 —
+                {t('All articles loaded')}
               </Typography>
             )}
           </Box>
@@ -361,7 +369,7 @@ export const Home: React.FC = () => {
 
             <Paper sx={{ p: 2.5, bgcolor: '#101726', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, borderBottom: '1px solid rgba(255, 255, 255, 0.05)', pb: 1 }}>
-                热门阅读排行榜
+                {t('Read Rank')}
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {displayedArticles.slice(0, 3).map((item, idx) => (
@@ -384,7 +392,7 @@ export const Home: React.FC = () => {
                         {item.title}
                       </Typography>
                       <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mt: 0.5 }}>
-                        {(item.views_count / 1000).toFixed(1)}k 阅读
+                        {(item.views_count / 1000).toFixed(1)}k {t('Read')}
                       </Typography>
                     </Box>
                   </Box>

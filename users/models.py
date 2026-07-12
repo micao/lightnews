@@ -5,6 +5,7 @@ from django.utils.translation import gettext_lazy as _
 class User(AbstractUser):
     """自定义用户模型，支持手机号/邮箱快捷登录"""
     phone_number = models.CharField(_("手机号码"), max_length=20, unique=True, blank=True, null=True)
+    roles = models.JSONField(_("用户角色"), default=list)
     
     class Meta:
         db_table = 'users'

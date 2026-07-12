@@ -4,14 +4,13 @@ import FlashOnIcon from '@mui/icons-material/FlashOn';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { type LiveNews } from '../types';
-
-
-
+import { useI18n } from '../context/I18nContext';
 import { API_BASE } from '../context/AuthContext';
 
 export const LiveNewsList: React.FC = () => {
   const [newsList, setNewsList] = useState<LiveNews[]>([]);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const { t } = useI18n();
 
   const fetchLiveNews = async () => {
     try {
@@ -55,10 +54,10 @@ export const LiveNewsList: React.FC = () => {
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, borderBottom: '1px solid rgba(255, 255, 255, 0.05)', pb: 1 }}>
         <FlashOnIcon sx={{ color: '#0066ff', mr: 1 }} />
         <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 700 }}>
-          7x24 创投快讯
+          {t('7x24 Flash News')}
         </Typography>
         <Badge variant="dot" color="primary" overlap="circular">
-          <Chip label="实时快报" size="small" color="primary" sx={{ fontSize: '0.75rem', height: 20 }} />
+          <Chip label={t('Real-time News')} size="small" color="primary" sx={{ fontSize: '0.75rem', height: 20 }} />
         </Badge>
       </Box>
 
@@ -87,13 +86,13 @@ export const LiveNewsList: React.FC = () => {
                     {item.publish_time}
                   </Typography>
                   {item.urgency === 'critical' && (
-                    <Chip label="首发" size="small" color="error" sx={{ height: 16, fontSize: '0.625rem', fontWeight: 700 }} />
+                    <Chip label={t('Exclusive')} size="small" color="error" sx={{ height: 16, fontSize: '0.625rem', fontWeight: 700 }} />
                   )}
                 </Box>
                 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <Chip
-                    label={item.tag}
+                    label={t(item.tag)}
                     size="small"
                     sx={{
                       height: 16,

@@ -5,6 +5,7 @@ import { CssBaseline, AppBar, Toolbar, Typography, Button, Box, Avatar, Containe
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { theme } from './theme';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { I18nProvider, useI18n } from './context/I18nContext';
 import { Home } from './pages/Home';
 import { ArticleDetail } from './pages/ArticleDetail';
 import { Login } from './pages/Login';
@@ -15,6 +16,7 @@ import { MarketTicker } from './components/MarketTicker';
 
 const AppNavigation: React.FC = () => {
   const { user } = useAuth();
+  const { t, language, setLanguage } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -46,7 +48,24 @@ const AppNavigation: React.FC = () => {
             {/* 右侧用户菜单 */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Button component={Link} to="/" sx={{ color: '#94a3b8', '&:hover': { color: 'primary.main' } }}>
-                首页推荐
+                {t('Home Recommend')}
+              </Button>
+
+              {/* 国际化语言切换按钮 */}
+              <Button
+                size="small"
+                onClick={() => setLanguage(language === 'zh' ? 'en' : 'zh')}
+                sx={{
+                  color: 'primary.main',
+                  fontWeight: 700,
+                  border: '1px solid rgba(0, 102, 255, 0.2)',
+                  px: 1.5,
+                  borderRadius: 1.5,
+                  fontSize: '0.75rem',
+                  textTransform: 'none'
+                }}
+              >
+                {language === 'zh' ? 'English' : '中文'}
               </Button>
               
               {user ? (
@@ -65,7 +84,7 @@ const AppNavigation: React.FC = () => {
                         display: { xs: 'none', sm: 'inline-flex' }
                       }}
                     >
-                      后台控制台
+                      {t('Console')}
                     </Button>
                   )}
                   <Box
@@ -99,7 +118,7 @@ const AppNavigation: React.FC = () => {
                   to="/login"
                   sx={{ color: '#fff', fontWeight: 700 }}
                 >
-                  登录
+                  {t('Login')}
                 </Button>
               )}
             </Box>
@@ -113,6 +132,7 @@ const AppNavigation: React.FC = () => {
 };
 
 export const AppContent: React.FC = () => {
+  const { t } = useI18n();
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: '#080c14' }}>
       <AppNavigation />
@@ -138,10 +158,10 @@ export const AppContent: React.FC = () => {
       <Box component="footer" sx={{ bgcolor: '#0f172a', borderTop: '1px solid rgba(255,255,255,0.05)', py: 4, mt: 'auto', textAlign: 'center', color: '#64748b' }}>
         <Container maxWidth="lg">
           <Typography variant="body2" sx={{ fontWeight: 600, color: '#94a3b8', mb: 1 }}>
-            LIGHT IN THE BRAIN 科技创投深度资讯门户
+            {t('LIGHT IN THE BRAIN Venture Capital Portal')}
           </Typography>
           <Typography variant="caption" sx={{ display: 'block' }}>
-            © 2026 LIGHT IN THE BRAIN. All rights reserved. 创投快报均来自一手及公开信披，不作为股权融资投资决策依据。
+            © 2026 LIGHT IN THE BRAIN. All rights reserved. {t('All news are sourced from public disclosures, not for investment decisions.')}
           </Typography>
         </Container>
       </Box>
@@ -151,14 +171,17 @@ export const AppContent: React.FC = () => {
 
 export const App: React.FC = () => {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AuthProvider>
-        <Router>
-          <AppContent />
-        </Router>
-      </AuthProvider>
-    </ThemeProvider>
+    <I18nProvider>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <AuthProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </AuthProvider>
+      </ThemeProvider>
+    </I18nProvider>
   );
 };
+
 export default App;

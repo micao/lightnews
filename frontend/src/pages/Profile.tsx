@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useI18n } from '../context/I18nContext';
 import {
   Box,
   Container,
@@ -22,6 +23,7 @@ import ShowChartIcon from '@mui/icons-material/ShowChart';
 
 export const Profile: React.FC = () => {
   const { user, logout, hasRole } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
 
   if (!user) {
@@ -29,13 +31,13 @@ export const Profile: React.FC = () => {
       <Container maxWidth="sm" sx={{ mt: 10, textAlign: 'center' }}>
         <Paper sx={{ p: 4, bgcolor: '#101726', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
           <Typography variant="h5" sx={{ color: '#f8fafc', mb: 2 }}>
-            您尚未登录
+            {t('Not Logged In')}
           </Typography>
           <Typography variant="body2" sx={{ color: '#64748b', mb: 3 }}>
-            请先登录以访问个人中心、自选关注赛道和您的订阅权益。
+            {t('Login Please')}
           </Typography>
           <Button variant="contained" color="primary" onClick={() => navigate('/login')} sx={{ color: '#fff' }}>
-            去登录
+            {t('Go Login')}
           </Button>
         </Paper>
       </Container>
@@ -44,9 +46,9 @@ export const Profile: React.FC = () => {
 
   // 模拟自选赛道监控列表
   const mockWatchlist = [
-    { symbol: 'AI.SaaS', name: '生成式 AI 与大模型', count: '142 家创企', activity: '极度活跃' },
-    { symbol: 'SPACE.VC', name: '商业航天与液体火箭', count: '34 家创企', activity: '高度活跃' },
-    { symbol: 'DRONE.VC', name: '低空飞行器与eVTOL', count: '21 家创企', activity: '平稳增长' },
+    { symbol: 'AI.SaaS', name: t('Generative AI and Large Models'), count: t('142 startups'), activity: t('Extremely Active') },
+    { symbol: 'SPACE.VC', name: t('Commercial Space and Liquid Rockets'), count: t('34 startups'), activity: t('Highly Active') },
+    { symbol: 'DRONE.VC', name: t('Low-altitude Aircraft and eVTOL'), count: t('21 startups'), activity: t('Steady Growth') },
   ];
 
   return (
@@ -79,20 +81,20 @@ export const Profile: React.FC = () => {
                 {hasRole('ROLE_ADMIN_USER') && (
                   <Chip
                     icon={<AdminPanelSettingsIcon style={{ color: '#fff', fontSize: 16 }} />}
-                    label="系统管理员"
+                    label={t('Administrator')}
                     sx={{ bgcolor: 'primary.main', color: '#fff', fontWeight: 700 }}
                   />
                 )}
                 {user.roles.includes('ROLE_USER') && !hasRole('ROLE_ADMIN_USER') && (
-                  <Chip label="特邀财经创投读者" color="secondary" sx={{ color: '#000', fontWeight: 600 }} />
+                  <Chip label={t('Special Guest Reader')} color="secondary" sx={{ color: '#000', fontWeight: 600 }} />
                 )}
               </Box>
               
               <Typography variant="body2" sx={{ color: '#94a3b8' }}>
-                账号用户名: {user.username}
+                {t('Username')}: {user.username}
               </Typography>
               <Typography variant="body2" sx={{ color: '#cbd5e1', mt: 1 }}>
-                个人简介: {user.bio || '这个读者很神秘，什么也没有写。'}
+                {t('Bio')}: {t(user.bio || 'This reader is mysterious and has written nothing.')}
               </Typography>
             </Box>
           </Grid>
@@ -115,7 +117,7 @@ export const Profile: React.FC = () => {
                   boxShadow: '0 4px 14px rgba(0, 102, 255, 0.25)',
                 }}
               >
-                进入后台管理 (Admin Dashboard)
+                {t('Admin Dashboard Portal')}
               </Button>
             )}
             
@@ -123,7 +125,7 @@ export const Profile: React.FC = () => {
               variant="outlined"
               sx={{ borderColor: 'rgba(255, 255, 255, 0.12)', color: '#94a3b8' }}
             >
-              修改资料
+              {t('Modify Profile')}
             </Button>
           </Box>
 
@@ -137,7 +139,7 @@ export const Profile: React.FC = () => {
             }}
             sx={{ fontWeight: 600 }}
           >
-            注销登录
+            {t('Logout')}
           </Button>
         </Box>
       </Paper>
@@ -149,7 +151,7 @@ export const Profile: React.FC = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 1 }}>
               <ShowChartIcon sx={{ color: 'primary.main' }} />
               <Typography variant="h6" sx={{ fontWeight: 700, color: '#f8fafc' }}>
-                自选追踪赛道 (Watchlist)
+                {t('Watchlist Sectors')}
               </Typography>
             </Box>
             
@@ -191,24 +193,24 @@ export const Profile: React.FC = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 1 }}>
               <StarIcon sx={{ color: 'primary.main' }} />
               <Typography variant="h6" sx={{ fontWeight: 700, color: '#f8fafc' }}>
-                特邀研究员订阅权益
+                {t('Research Benefits')}
               </Typography>
             </Box>
             
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Box sx={{ p: 2, bgcolor: 'rgba(0, 102, 255, 0.05)', border: '1px dashed rgba(0, 102, 255, 0.2)', borderRadius: 2 }}>
                 <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 700, mb: 0.5 }}>
-                  {hasRole('ROLE_ADMIN_USER') ? '终身特邀研究员黄金合伙人' : '已解锁 VC 观察哨专栏'}
+                  {hasRole('ROLE_ADMIN_USER') ? t('VIP Partner') : t('VIP Observer')}
                 </Typography>
                 <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-                  有效期: 2029-12-31 | 自动续费: 已开启
+                  {t('Expiry')}: 2029-12-31 | {t('Auto Renew')}: {t('Active')}
                 </Typography>
               </Box>
 
               <Typography variant="caption" color="textSecondary" sx={{ lineHeight: 1.5 }}>
-                • 尊享国内外头部创投机构直投趋势周报阅读特权。<br />
-                • 拥有前沿科技、商业航天等硬科技板块自选消息定制。<br />
-                • 控制台特邀创新项目投递通道绿灯免审。
+                {t('Benefit 1')}<br />
+                {t('Benefit 2')}<br />
+                {t('Benefit 3')}
               </Typography>
             </Box>
           </Paper>
