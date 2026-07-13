@@ -51,6 +51,7 @@ class Article(models.Model):
 
     tags = models.ManyToManyField(Tag, through='ArticleTagRelation')
     instruments = models.ManyToManyField('market.MarketInstrument', through='ArticleInstrumentRelation')
+    related_articles = models.ManyToManyField('self', blank=True, symmetrical=True)
 
     class Meta:
         db_table = 'articles'

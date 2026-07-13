@@ -31,6 +31,8 @@ import {
   InputLabel,
   Switch,
   FormControlLabel,
+  Autocomplete,
+  CircularProgress,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -79,7 +81,55 @@ export const AdminDashboard: React.FC = () => {
   const [editSaving, setEditSaving] = useState(false);
   const [editThumbnail, setEditThumbnail] = useState('');
   const [editSourceUrl, setEditSourceUrl] = useState('');
+  const [editCategoryId, setEditCategoryId] = useState<number>(1);
+  const [editRelatedArticles, setEditRelatedArticles] = useState<Article[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
+
+  // 新建文章弹窗状态
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createTitle, setCreateTitle] = useState('');
+  const [createSummary, setCreateSummary] = useState('');
+  const [createContent, setCreateContent] = useState('');
+  const [createCategoryId, setCreateCategoryId] = useState<number>(1);
+  const [createStatus, setCreateStatus] = useState('draft');
+  const [createIsVip, setCreateIsVip] = useState(false);
+  const [createSourceUrl, setCreateSourceUrl] = useState('');
+  const [createRelatedArticles, setCreateRelatedArticles] = useState<Article[]>([]);
+  const [createSaving, setCreateSaving] = useState(false);
+
+  // 关联文章搜索检索状态
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Article[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  // 异步检索相关文章的防抖 Hook
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const delayDebounce = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const token = localStorage.getItem('lightnews_token');
+        const headers: HeadersInit = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        // 由于是选择关联文章，为了方便匹配所有状态的文章，传递 status=all
+        const res = await fetch(`${API_BASE}/api/articles/?q=${encodeURIComponent(searchQuery)}&status=all&limit=10`, { headers });
+        const data = await res.json();
+        if (data.success) {
+          setSearchResults(data.articles);
+        }
+      } catch (err) {
+        console.error('Search articles error:', err);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery]);
 
   // 创投统计指标：每周收到的商业计划书数量
   const proposalsTrendData = [
@@ -223,6 +273,8 @@ export const AdminDashboard: React.FC = () => {
     setEditIsVip(article.is_vip_only);
     setEditThumbnail(article.thumbnail || '');
     setEditSourceUrl(article.source_url || '');
+    setEditCategoryId(article.category.id);
+    setEditRelatedArticles(article.related_articles || []);
     setEditDialogOpen(true);
   };
 
@@ -282,6 +334,8 @@ export const AdminDashboard: React.FC = () => {
           status: editStatus,
           is_vip_only: editIsVip,
           source_url: editSourceUrl,
+          category_id: editCategoryId,
+          related_article_ids: editRelatedArticles.map(a => a.id),
         }),
       });
       const data = await res.json();
@@ -298,6 +352,63 @@ export const AdminDashboard: React.FC = () => {
     }
     setEditSaving(false);
     setSnackbarOpen(true);
+  };
+
+  const handleCreateSave = async () => {
+    if (!createTitle.trim() || !createContent.trim()) {
+      setSnackbarMsg('标题和正文不能为空');
+      setSnackbarOpen(true);
+      return;
+    }
+    setCreateSaving(true);
+    const formattedContent = createContent
+      .split(/\n+/)
+      .filter((p) => p.trim() !== '')
+      .map((p) => `<p>${p.trim()}</p>`)
+      .join('');
+
+    try {
+      const token = localStorage.getItem('lightnews_token');
+      const res = await fetch(`${API_BASE}/api/admin/articles/create/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: createTitle,
+          summary: createSummary,
+          content: formattedContent,
+          status: createStatus,
+          is_vip_only: createIsVip,
+          source_url: createSourceUrl,
+          category_id: createCategoryId,
+          related_article_ids: createRelatedArticles.map((a) => a.id),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSnackbarMsg('文章发布成功！');
+        setCreateDialogOpen(false);
+        // 重置新建状态
+        setCreateTitle('');
+        setCreateSummary('');
+        setCreateContent('');
+        setCreateStatus('draft');
+        setCreateIsVip(false);
+        setCreateSourceUrl('');
+        setCreateRelatedArticles([]);
+        fetchArticles(); // 重新加载
+      } else {
+        setSnackbarMsg(data.message || '发布失败');
+      }
+    } catch (err) {
+      console.error('Create article error:', err);
+      setSnackbarMsg('网络错误');
+    } finally {
+      setCreateSaving(false);
+      setSnackbarOpen(true);
+    }
   };
 
   // 处理评论审核动作
@@ -406,7 +517,12 @@ export const AdminDashboard: React.FC = () => {
           </Typography>
         </Box>
 
-        <Button variant="contained" color="primary" sx={{ color: '#fff' }}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => setCreateDialogOpen(true)}
+          sx={{ color: '#fff' }}
+        >
           {t('Publish Analysis')}
         </Button>
       </Box>
@@ -910,7 +1026,89 @@ export const AdminDashboard: React.FC = () => {
               },
             }}
           />
+          {/* 相关文章关联智能搜索与展示 */}
+          <Typography variant="subtitle2" sx={{ color: '#cbd5e1', mb: 1, fontWeight: 700 }}>
+            {t('Related Articles')}
+          </Typography>
+          <Autocomplete
+            options={searchResults}
+            loading={searchLoading}
+            getOptionLabel={(option) => option.title}
+            filterOptions={(x) => x}
+            onInputChange={(_e, newInputValue) => setSearchQuery(newInputValue)}
+            onChange={(_e, value) => {
+              if (value) {
+                if (value.id === editingArticle?.id) return;
+                if (editRelatedArticles.some((x) => x.id === value.id)) return;
+                setEditRelatedArticles((prev) => [...prev, value]);
+                setSearchQuery('');
+              }
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label={t('Search related articles...')}
+                placeholder={t('Search by title...')}
+                sx={{
+                  mb: 1.5,
+                  '& .MuiInputLabel-root': { color: '#64748b' },
+                  '& .MuiOutlinedInput-root': {
+                    color: '#f8fafc',
+                    '& fieldset': { borderColor: '#334155' },
+                    '&:hover fieldset': { borderColor: '#475569' },
+                  },
+                }}
+              />
+            )}
+            sx={{
+              mb: 1,
+              '& .MuiAutocomplete-paper': { bgcolor: '#101726', color: '#fff', border: '1px solid #334155' },
+            }}
+          />
+          {/* 展示已选相关文章的 Chip 堆叠区 */}
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
+            {editRelatedArticles.map((art) => (
+              <Chip
+                key={art.id}
+                label={art.title}
+                onDelete={() => setEditRelatedArticles((prev) => prev.filter((x) => x.id !== art.id))}
+                sx={{
+                  bgcolor: 'rgba(0, 102, 255, 0.1)',
+                  color: 'primary.main',
+                  border: '1px solid rgba(0, 102, 255, 0.2)',
+                  fontWeight: 600,
+                  maxWidth: '100%',
+                  '& .MuiChip-deleteIcon': { color: 'primary.main', '&:hover': { color: '#ff4d4f' } },
+                }}
+              />
+            ))}
+            {editRelatedArticles.length === 0 && (
+              <Typography variant="caption" sx={{ color: '#64748b', fontStyle: 'italic' }}>
+                暂无关联的推荐文章
+              </Typography>
+            )}
+          </Box>
+
           <Grid container spacing={2} sx={{ mb: 1 }}>
+            <Grid size={{ xs: 12 }}>
+              <FormControl fullWidth sx={{ mb: 1.5 }}>
+                <InputLabel sx={{ color: '#64748b' }}>{t('Category')}</InputLabel>
+                <Select
+                  value={editCategoryId}
+                  label={t('Category')}
+                  onChange={(e) => setEditCategoryId(Number(e.target.value))}
+                  sx={{
+                    color: '#f8fafc',
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#334155' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#475569' },
+                  }}
+                >
+                  <MenuItem value={1}>{t('Frontier Tech')}</MenuItem>
+                  <MenuItem value={2}>{t('Unicorn Dynamics')}</MenuItem>
+                  <MenuItem value={3}>{t('VC/PE Insights')}</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
             <Grid size={{ xs: 6 }}>
               <FormControl fullWidth>
                 <InputLabel sx={{ color: '#64748b' }}>{t('Status')}</InputLabel>
@@ -957,6 +1155,224 @@ export const AdminDashboard: React.FC = () => {
             sx={{ color: '#fff', fontWeight: 700 }}
           >
             {editSaving ? t('Saving...') : t('Save')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 发布创投分析弹窗 */}
+      <Dialog
+        open={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+        sx={{
+          '& .MuiDialog-paper': {
+            bgcolor: '#101726',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            backgroundImage: 'none',
+            maxHeight: '85vh',
+          },
+        }}
+      >
+        <DialogTitle sx={{ color: '#f8fafc', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          {t('Publish Analysis')}
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <TextField
+            fullWidth
+            label={t('Article Title')}
+            value={createTitle}
+            onChange={(e) => setCreateTitle(e.target.value)}
+            sx={{
+              mt: 1, mb: 2.5,
+              '& .MuiInputLabel-root': { color: '#64748b' },
+              '& .MuiOutlinedInput-root': {
+                color: '#f8fafc',
+                '& fieldset': { borderColor: '#334155' },
+                '&:hover fieldset': { borderColor: '#475569' },
+              },
+            }}
+          />
+          <TextField
+            fullWidth
+            label={t('Source Link')}
+            value={createSourceUrl}
+            onChange={(e) => setCreateSourceUrl(e.target.value)}
+            placeholder="https://example.com/original-article"
+            sx={{
+              mb: 2.5,
+              '& .MuiInputLabel-root': { color: '#64748b' },
+              '& .MuiOutlinedInput-root': {
+                color: '#f8fafc',
+                '& fieldset': { borderColor: '#334155' },
+                '&:hover fieldset': { borderColor: '#475569' },
+              },
+            }}
+          />
+          <TextField
+            fullWidth
+            label={t('Summary')}
+            multiline
+            rows={2}
+            value={createSummary}
+            onChange={(e) => setCreateSummary(e.target.value)}
+            sx={{
+              mb: 2.5,
+              '& .MuiInputLabel-root': { color: '#64748b' },
+              '& .MuiOutlinedInput-root': {
+                color: '#f8fafc',
+                '& fieldset': { borderColor: '#334155' },
+                '&:hover fieldset': { borderColor: '#475569' },
+              },
+            }}
+          />
+          <TextField
+            fullWidth
+            label={t('Content')}
+            multiline
+            rows={8}
+            value={createContent}
+            onChange={(e) => setCreateContent(e.target.value)}
+            placeholder="使用回车分段..."
+            sx={{
+              mb: 2.5,
+              '& .MuiInputLabel-root': { color: '#64748b' },
+              '& .MuiOutlinedInput-root': {
+                color: '#f8fafc',
+                '& fieldset': { borderColor: '#334155' },
+                '&:hover fieldset': { borderColor: '#475569' },
+              },
+            }}
+          />
+
+          {/* 相关文章关联智能搜索与展示 */}
+          <Typography variant="subtitle2" sx={{ color: '#cbd5e1', mb: 1, fontWeight: 700 }}>
+            {t('Related Articles')}
+          </Typography>
+          <Autocomplete
+            options={searchResults}
+            loading={searchLoading}
+            getOptionLabel={(option) => option.title}
+            filterOptions={(x) => x}
+            onInputChange={(_e, newInputValue) => setSearchQuery(newInputValue)}
+            onChange={(_e, value) => {
+              if (value) {
+                if (createRelatedArticles.some((x) => x.id === value.id)) return;
+                setCreateRelatedArticles((prev) => [...prev, value]);
+                setSearchQuery('');
+              }
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label={t('Search related articles...')}
+                placeholder={t('Search by title...')}
+                sx={{
+                  mb: 1.5,
+                  '& .MuiInputLabel-root': { color: '#64748b' },
+                  '& .MuiOutlinedInput-root': {
+                    color: '#f8fafc',
+                    '& fieldset': { borderColor: '#334155' },
+                    '&:hover fieldset': { borderColor: '#475569' },
+                  },
+                }}
+              />
+            )}
+            sx={{
+              mb: 1,
+              '& .MuiAutocomplete-paper': { bgcolor: '#101726', color: '#fff', border: '1px solid #334155' },
+            }}
+          />
+          {/* 展示已选相关文章的 Chip 堆叠区 */}
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
+            {createRelatedArticles.map((art) => (
+              <Chip
+                key={art.id}
+                label={art.title}
+                onDelete={() => setCreateRelatedArticles((prev) => prev.filter((x) => x.id !== art.id))}
+                sx={{
+                  bgcolor: 'rgba(0, 102, 255, 0.1)',
+                  color: 'primary.main',
+                  border: '1px solid rgba(0, 102, 255, 0.2)',
+                  fontWeight: 600,
+                  maxWidth: '100%',
+                  '& .MuiChip-deleteIcon': { color: 'primary.main', '&:hover': { color: '#ff4d4f' } },
+                }}
+              />
+            ))}
+            {createRelatedArticles.length === 0 && (
+              <Typography variant="caption" sx={{ color: '#64748b', fontStyle: 'italic' }}>
+                暂无关联的推荐文章
+              </Typography>
+            )}
+          </Box>
+
+          <Grid container spacing={2} sx={{ mb: 1 }}>
+            <Grid size={{ xs: 12 }}>
+              <FormControl fullWidth sx={{ mb: 1.5 }}>
+                <InputLabel sx={{ color: '#64748b' }}>{t('Category')}</InputLabel>
+                <Select
+                  value={createCategoryId}
+                  label={t('Category')}
+                  onChange={(e) => setCreateCategoryId(Number(e.target.value))}
+                  sx={{
+                    color: '#f8fafc',
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#334155' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#475569' },
+                  }}
+                >
+                  <MenuItem value={1}>{t('Frontier Tech')}</MenuItem>
+                  <MenuItem value={2}>{t('Unicorn Dynamics')}</MenuItem>
+                  <MenuItem value={3}>{t('VC/PE Insights')}</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <FormControl fullWidth>
+                <InputLabel sx={{ color: '#64748b' }}>{t('Status')}</InputLabel>
+                <Select
+                  value={createStatus}
+                  label={t('Status')}
+                  onChange={(e) => setCreateStatus(e.target.value)}
+                  sx={{
+                    color: '#f8fafc',
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#334155' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#475569' },
+                  }}
+                >
+                  <MenuItem value="draft">{t('Draft')}</MenuItem>
+                  <MenuItem value="under_review">{t('Under Review')}</MenuItem>
+                  <MenuItem value="published">{t('Published')}</MenuItem>
+                  <MenuItem value="archived">{t('Archived')}</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 6 }} sx={{ display: 'flex', alignItems: 'center' }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={createIsVip}
+                    onChange={(e) => setCreateIsVip(e.target.checked)}
+                    color="secondary"
+                  />
+                }
+                label={t('VIP Exclusive')}
+                sx={{ color: '#94a3b8', ml: 1 }}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <Button onClick={() => setCreateDialogOpen(false)} sx={{ color: '#94a3b8' }}>
+            {t('Cancel')}
+          </Button>
+          <Button
+            onClick={handleCreateSave}
+            variant="contained"
+            disabled={createSaving}
+            sx={{ color: '#fff', fontWeight: 700 }}
+          >
+            {createSaving ? t('Saving...') : t('Publish Straight')}
           </Button>
         </DialogActions>
       </Dialog>

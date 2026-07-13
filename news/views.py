@@ -29,6 +29,30 @@ def serialize_article(article, request=None, is_detail=False):
     author_profile = getattr(article.author, 'profile', None)
     author_name = author_profile.nickname if author_profile else article.author.username
 
+    related_serialized = []
+    try:
+        for rel in article.related_articles.all():
+            rel_author_profile = getattr(rel.author, 'profile', None)
+            rel_author_name = rel_author_profile.nickname if rel_author_profile else rel.author.username
+            related_serialized.append({
+                'id': rel.id,
+                'title': rel.title,
+                'slug': rel.slug,
+                'summary': rel.summary or '',
+                'thumbnail': rel.thumbnail or '',
+                'publish_at': rel.publish_at.strftime('%Y-%m-%d') if rel.publish_at else '',
+                'category': {
+                    'id': rel.category.id,
+                    'name': rel.category.name
+                },
+                'author': {
+                    'id': rel.author.id,
+                    'nickname': rel_author_name
+                }
+            })
+    except Exception:
+        pass
+
     return {
         'id': article.id,
         'title': article.title,
@@ -51,7 +75,8 @@ def serialize_article(article, request=None, is_detail=False):
         'author': {
             'id': article.author.id,
             'nickname': author_name,
-        }
+        },
+        'related_articles': related_serialized
     }
 
 def article_list_view(request):
@@ -60,11 +85,13 @@ def article_list_view(request):
         limit = int(request.GET.get('limit', 5))
         category_name = request.GET.get('category', '').strip()
         status_filter = request.GET.get('status', 'published') # Default to published
+        q = request.GET.get('q', '').strip()
     except ValueError:
         page = 1
         limit = 5
         category_name = ''
         status_filter = 'published'
+        q = ''
 
     # 对普通用户，强制只看已发布文章
     user = get_authenticated_user(request)
@@ -75,6 +102,9 @@ def article_list_view(request):
 
     queryset = Article.objects.select_related('category', 'author', 'author__profile').all()
     
+    if q:
+        queryset = queryset.filter(title__icontains=q)
+
     if not is_admin or status_filter == 'published':
         queryset = queryset.filter(status=Article.Status.PUBLISHED)
     elif status_filter == 'draft':
@@ -384,6 +414,78 @@ def admin_livenews_create_view(request):
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
 @csrf_exempt
+def admin_article_create_view(request):
+    """管理员发布创投分析文章"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Method not allowed'}, status=405)
+
+    try:
+        user = get_authenticated_user(request)
+        if not user:
+            return JsonResponse({'success': False, 'message': '未登录'}, status=401)
+
+        from users.views import get_user_roles
+        if 'ROLE_ADMIN_USER' not in get_user_roles(user):
+            return JsonResponse({'success': False, 'message': '权限不足'}, status=403)
+
+        import json
+        body = json.loads(request.body)
+
+        title = body.get('title', '').strip()
+        content = body.get('content', '').strip()
+        category_id = body.get('category_id')
+
+        if not title or not content or not category_id:
+            return JsonResponse({'success': False, 'message': '标题、正文和分类不能为空'}, status=400)
+
+        cat = Category.objects.filter(id=category_id).first()
+        if not cat:
+            return JsonResponse({'success': False, 'message': '分类不存在'}, status=404)
+
+        import uuid
+        from django.utils.text import slugify
+        
+        slug_base = slugify(title)
+        if not slug_base:
+            slug_base = "analysis"
+        
+        slug = f"{slug_base}-{str(uuid.uuid4())[:8]}"
+        
+        summary = body.get('summary', '').strip()
+        status = body.get('status', Article.Status.DRAFT)
+        is_vip_only = body.get('is_vip_only', False)
+        source_url = body.get('source_url', '').strip()
+
+        publish_at = None
+        if status == Article.Status.PUBLISHED:
+            publish_at = timezone.now()
+
+        article = Article.objects.create(
+            title=title,
+            slug=slug,
+            summary=summary if summary else None,
+            content=content,
+            author=user,
+            category=cat,
+            status=status,
+            is_vip_only=is_vip_only,
+            source_url=source_url if source_url else None,
+            publish_at=publish_at
+        )
+
+        if 'related_article_ids' in body:
+            rel_ids = [int(rid) for rid in body['related_article_ids'] if int(rid) != article.id]
+            article.related_articles.set(rel_ids)
+
+        return JsonResponse({
+            'success': True,
+            'message': '文章发布成功！',
+            'article': serialize_article(article, request)
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+@csrf_exempt
 def admin_article_update_view(request, article_id):
     """管理员编辑文章 (支持修改标题、摘要、内容、分类、状态、VIP标识)"""
     if request.method != 'PUT' and request.method != 'POST':
@@ -424,6 +526,10 @@ def admin_article_update_view(request, article_id):
             cat = Category.objects.filter(id=body['category_id']).first()
             if cat:
                 article.category = cat
+
+        if 'related_article_ids' in body:
+            rel_ids = [int(rid) for rid in body['related_article_ids'] if int(rid) != article.id]
+            article.related_articles.set(rel_ids)
 
         article.save()
 

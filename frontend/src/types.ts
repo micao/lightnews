@@ -37,6 +37,7 @@ export interface Article {
   status?: string;
   thumbnail?: string;
   source_url?: string;
+  related_articles?: Article[];
 }
 
 export interface LiveNews {

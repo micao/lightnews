@@ -12,6 +12,8 @@ import {
   IconButton,
   Grid,
   Chip,
+  Card,
+  CardContent,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import FavoriteIcon from '@mui/icons-material/Favorite';
@@ -342,6 +344,142 @@ export const ArticleDetail: React.FC = () => {
               )}
             </Box>
           </Paper>
+
+          {/* 相关推荐研究 */}
+          {article.related_articles && article.related_articles.length > 0 && (
+            <Paper
+              sx={{
+                p: 4,
+                mt: 4,
+                bgcolor: '#101726',
+                border: '1px solid rgba(255, 255, 255, 0.05)',
+                borderRadius: 4,
+              }}
+            >
+              <Typography
+                variant="h5"
+                sx={{
+                  color: '#f8fafc',
+                  fontWeight: 800,
+                  mb: 3,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5,
+                }}
+              >
+                <StarIcon sx={{ color: 'primary.main' }} />
+                {t('Related Research')}
+              </Typography>
+              <Grid container spacing={3}>
+                {article.related_articles.map((rel) => {
+                  const relThumb = rel.thumbnail;
+                  return (
+                    <Grid key={rel.id} size={{ xs: 12, sm: 6, md: 4 }}>
+                      <Card
+                        onClick={() => {
+                          navigate(`/article/${rel.slug}`);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        sx={{
+                          height: '100%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          cursor: 'pointer',
+                          bgcolor: 'rgba(255, 255, 255, 0.02)',
+                          border: '1px solid rgba(255, 255, 255, 0.05)',
+                          borderRadius: 3,
+                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                          overflow: 'hidden',
+                          '&:hover': {
+                            transform: 'translateY(-4px)',
+                            borderColor: 'primary.main',
+                            boxShadow: '0 12px 24px rgba(0, 102, 255, 0.1)',
+                            '& img': { transform: 'scale(1.05)' },
+                            '& .rel-title': { color: 'primary.main' },
+                          },
+                        }}
+                      >
+                        {/* 缩略图 */}
+                        <Box sx={{ position: 'relative', pt: '56.25%', overflow: 'hidden', bgcolor: 'rgba(255, 255, 255, 0.02)' }}>
+                          {relThumb ? (
+                            <img
+                              src={relThumb.startsWith('http') ? relThumb : `${API_BASE}${relThumb}`}
+                              alt={rel.title}
+                              style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                              }}
+                            />
+                          ) : (
+                            <Box
+                              sx={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <Typography variant="caption" sx={{ color: '#475569' }}>
+                                NO IMAGE
+                              </Typography>
+                            </Box>
+                          )}
+                        </Box>
+                        {/* 卡片内容 */}
+                        <CardContent sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Chip
+                              label={t(rel.category.name)}
+                              size="small"
+                              sx={{
+                                bgcolor: 'rgba(0, 102, 255, 0.08)',
+                                color: 'primary.main',
+                                fontWeight: 700,
+                                fontSize: '0.7rem',
+                                borderRadius: 1.5,
+                              }}
+                            />
+                            {rel.publish_at && (
+                              <Typography variant="caption" sx={{ color: '#64748b' }}>
+                                {rel.publish_at.split(' ')[0]}
+                              </Typography>
+                            )}
+                          </Box>
+                          <Typography
+                            className="rel-title"
+                            variant="body1"
+                            sx={{
+                              color: '#f1f5f9',
+                              fontWeight: 700,
+                              lineHeight: 1.4,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              transition: 'color 0.2s',
+                            }}
+                          >
+                            {rel.title}
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  );
+                })}
+              </Grid>
+            </Paper>
+          )}
 
           {/* 评论区 */}
           <Box sx={{ mt: 4 }}>

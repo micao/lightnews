@@ -164,6 +164,9 @@ const ZH_TRANSLATIONS: Record<string, string> = {
   'Article Thumbnail': '文章缩略图',
   'Upload failed': '图片上传失败',
   'Source Link': '原文章链接 / 出处',
+  'Related Research': '相关推荐研究',
+  'Search related articles...': '搜索关联推荐文章...',
+  'Search by title...': '输入标题关键字进行搜索...',
 };
 
 interface I18nContextType {

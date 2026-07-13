@@ -70,14 +70,14 @@ export const Profile: React.FC = () => {
               {user.nickname?.charAt(0) || user.username.charAt(0).toUpperCase()}
             </Avatar>
           </Grid>
-          
+
           <Grid size={{ xs: 12, sm: 9 }}>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
                 <Typography variant="h3" sx={{ color: '#f8fafc', fontWeight: 800 }}>
                   {user.nickname || user.username}
                 </Typography>
-                
+
                 {hasRole('ROLE_ADMIN_USER') && (
                   <Chip
                     icon={<AdminPanelSettingsIcon style={{ color: '#fff', fontSize: 16 }} />}
@@ -89,7 +89,7 @@ export const Profile: React.FC = () => {
                   <Chip label={t('Special Guest Reader')} color="secondary" sx={{ color: '#000', fontWeight: 600 }} />
                 )}
               </Box>
-              
+
               <Typography variant="body2" sx={{ color: '#94a3b8' }}>
                 {t('Username')}: {user.username}
               </Typography>
@@ -110,7 +110,7 @@ export const Profile: React.FC = () => {
                 variant="contained"
                 color="primary"
                 startIcon={<AdminPanelSettingsIcon />}
-                onClick={() => navigate('/admin')}
+                onClick={() => navigate('/admin-dashboard')}
                 sx={{
                   color: '#fff',
                   fontWeight: 700,
@@ -120,7 +120,7 @@ export const Profile: React.FC = () => {
                 {t('Admin Dashboard Portal')}
               </Button>
             )}
-            
+
             <Button
               variant="outlined"
               sx={{ borderColor: 'rgba(255, 255, 255, 0.12)', color: '#94a3b8' }}
@@ -154,7 +154,7 @@ export const Profile: React.FC = () => {
                 {t('Watchlist Sectors')}
               </Typography>
             </Box>
-            
+
             <List sx={{ p: 0 }}>
               {mockWatchlist.map((stock, i) => (
                 <Box key={stock.symbol}>
@@ -196,7 +196,7 @@ export const Profile: React.FC = () => {
                 {t('Research Benefits')}
               </Typography>
             </Box>
-            
+
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Box sx={{ p: 2, bgcolor: 'rgba(0, 102, 255, 0.05)', border: '1px dashed rgba(0, 102, 255, 0.2)', borderRadius: 2 }}>
                 <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 700, mb: 0.5 }}>

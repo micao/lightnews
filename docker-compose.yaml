@@ -2,7 +2,7 @@ services:
   db:
     image: postgres:15-alpine
     volumes:
-      - postgres_data:/var/lib/postgresql/data/
+      - ./postgres_data:/var/lib/postgresql/data/
     environment:
       - POSTGRES_DB=${DB_NAME}
       - POSTGRES_USER=${DB_USER}
@@ -17,8 +17,8 @@ services:
     # 开发环境会挂载代码，实现热重载；生产环境直接运行容器内打包好的代码
     volumes:
       - .:/code
-      - static_volume:/code/staticfiles
-      - media_volume:/code/mediafiles
+      - ./staticfiles:/code/staticfiles
+      - ./mediafiles:/code/mediafiles
     environment:
       - DEBUG=${DEBUG}
       - SECRET_KEY=${SECRET_KEY}
@@ -38,8 +38,8 @@ services:
     image: nginx:1.25-alpine
     volumes:
       - ./deploy/nginx/${NGINX_CONFIG}:/etc/nginx/conf.d/default.conf
-      - static_volume:/code/staticfiles
-      - media_volume:/code/mediafiles
+      - ./staticfiles:/code/staticfiles
+      - ./mediafiles:/code/mediafiles
     ports:
       - "${WEB_PORT_EXPOSE}:80"
     depends_on:
@@ -47,7 +47,4 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-volumes:
-  postgres_data:
-  static_volume:
-  media_volume:
+# no global volumes needed

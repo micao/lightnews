@@ -9,6 +9,7 @@ from news.views import (
     admin_livenews_list_view,
     admin_livenews_approve_view,
     admin_livenews_create_view,
+    admin_article_create_view,
     admin_article_update_view,
     admin_article_delete_view,
     admin_article_upload_image_view
@@ -57,6 +58,7 @@ urlpatterns = [
     path('api/admin/livenews/', admin_livenews_list_view),
     path('api/admin/livenews/approve/', admin_livenews_approve_view),
     path('api/admin/livenews/create/', admin_livenews_create_view),
+    path('api/admin/articles/create/', admin_article_create_view),
     path('api/admin/articles/<int:article_id>/', admin_article_update_view),
     path('api/admin/articles/<int:article_id>/delete/', admin_article_delete_view),
     path('api/admin/articles/<int:article_id>/upload-image/', admin_article_upload_image_view),
