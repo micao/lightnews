@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import path
 from users.views import register_view, login_view, profile_view
 from news.views import article_list_view, article_detail_view, live_news_list_view, seed_data_view
+from market.views import funding_deals_list_view
 from interactions.views import (
     comment_list_view,
     comment_create_view,
@@ -31,6 +32,9 @@ urlpatterns = [
     path('api/articles/<slug:slug>/', article_detail_view),
     path('api/livenews/', live_news_list_view),
     path('api/seed/', seed_data_view),
+    
+    # 市场行情投融资滚动条
+    path('api/market/ticker/', funding_deals_list_view),
     
     # 社交互动
     path('api/interactions/comment/', comment_dispatch),

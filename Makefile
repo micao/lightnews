@@ -1,4 +1,4 @@
-.PHONY: dev destroy dev-frontend dev-frontend-docker makemigrations migrate check shell seed
+.PHONY: dev destroy dev-frontend dev-frontend-docker makemigrations migrate check shell seed sync-deals
 
 # 启动后端 Docker 容器环境
 dev:
@@ -35,3 +35,7 @@ shell:
 # 填充开发环境创投种子数据 (分类、文章、快讯及作者)
 seed:
 	docker compose --env-file .env.dev exec web python manage.py shell -c "from news.views import seed_data_view; from django.test import RequestFactory; print(seed_data_view(RequestFactory().get('/api/seed/')).content)"
+
+# 同步中外双源最新大额投融资动态数据
+sync-deals:
+	docker compose --env-file .env.dev exec web python manage.py sync_latest_funding_deals

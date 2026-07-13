@@ -219,6 +219,39 @@ export const ArticleDetail: React.FC = () => {
               </Box>
             </Box>
 
+            {/* 核心导读 / 摘要 */}
+            {article.summary && (
+              <Box
+                sx={{
+                  p: 2.5,
+                  mb: 4,
+                  bgcolor: 'rgba(0, 102, 255, 0.03)',
+                  borderLeft: '4px solid',
+                  borderColor: 'secondary.main',
+                  borderRadius: '0 8px 8px 0',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.01)',
+                  borderRight: '1px solid rgba(255, 255, 255, 0.01)',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.01)',
+                }}
+              >
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    color: 'secondary.main',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    mb: 1
+                  }}
+                >
+                  {t('Abstract / Summary')}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#94a3b8', lineHeight: 1.6, fontStyle: 'italic' }}>
+                  {article.summary}
+                </Typography>
+              </Box>
+            )}
+
             {/* 文章内容 */}
             <Box sx={{ color: '#cbd5e1', fontSize: '1.0625rem', lineHeight: 1.8 }}>
               {isVipLocked ? (
@@ -274,10 +307,20 @@ export const ArticleDetail: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <Typography variant="body1" sx={{ mb: 2 }}>
-                    {article.content}
-                  </Typography>
-                  <Typography variant="body1" sx={{ mb: 2 }}>
+                  <Box
+                    dangerouslySetInnerHTML={{ __html: article.content }}
+                    sx={{
+                      color: '#cbd5e1',
+                      fontSize: '1.0625rem',
+                      lineHeight: 1.8,
+                      '& p': { mb: 2.5 },
+                      '& h3, & h4, & h2': { color: '#f8fafc', mt: 3.5, mb: 1.5, fontWeight: 700 },
+                      '& ul, & ol': { pl: 3, mb: 2.5 },
+                      '& li': { mb: 1 },
+                      '& img': { maxWidth: '100%', height: 'auto', borderRadius: 2, my: 2 }
+                    }}
+                  />
+                  <Typography variant="body2" sx={{ mb: 2, mt: 3, color: 'text.secondary', fontStyle: 'italic', borderTop: '1px dashed rgba(255,255,255,0.05)', pt: 2 }}>
                     {t('Venture End Warning')}
                   </Typography>
                 </>

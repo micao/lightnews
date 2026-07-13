@@ -33,6 +33,7 @@ const ZH_TRANSLATIONS: Record<string, string> = {
   // Article Detail
   'Exclusive Column': '创投独家专栏',
   'Published at': '发布于',
+  'Abstract / Summary': '核心导读 / 摘要',
   'Likes': '赞',
   'VIP Lock Title': '本内容为创投独家专栏深度解析',
   'VIP Lock Desc': 'LIGHT IN THE BRAIN 独家深度创投研报。包含全球科技巨头布局、细分赛道梳理与初创企业评级，登录或升级会员即可解锁全文。',

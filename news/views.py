@@ -1,3 +1,4 @@
+import re
 from django.http import JsonResponse
 from django.db import models
 from django.utils import timezone
@@ -21,7 +22,9 @@ def serialize_article(article, request=None, is_detail=False):
             if not is_detail:
                 content = "" # 列表页不显示详情
             else:
-                content = content[:150] + "..." # 详情页截断并指示锁定
+                # 剥离 HTML 标签，防止截断时产生不闭合的 HTML 标签导致前台布局破坏
+                text_content = re.sub(r'<[^>]+>', '', content)
+                content = text_content[:150] + "..."
 
     author_profile = getattr(article.author, 'profile', None)
     author_name = author_profile.nickname if author_profile else article.author.username
