@@ -19,6 +19,7 @@ import FavoriteIcon from '@mui/icons-material/Favorite';
 import CommentIcon from '@mui/icons-material/Comment';
 import StarIcon from '@mui/icons-material/Star';
 import { LiveNewsList } from '../components/LiveNewsList';
+import { TradingViewMarketOverview } from '../components/TradingViewMarketOverview';
 import { type Article } from '../types';
 import { API_BASE } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
@@ -366,6 +367,7 @@ export const Home: React.FC = () => {
         <Grid size={{ xs: 12, md: 4 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <LiveNewsList />
+            <TradingViewMarketOverview />
 
             <Paper sx={{ p: 2.5, bgcolor: '#101726', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, borderBottom: '1px solid rgba(255, 255, 255, 0.05)', pb: 1 }}>

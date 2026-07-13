@@ -128,6 +128,7 @@ class LiveNews(models.Model):
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.RESTRICT)
     publish_time = models.DateTimeField(auto_now_add=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    is_approved = models.BooleanField(default=True)
 
     instruments = models.ManyToManyField('market.MarketInstrument', through='LiveNewsInstrumentRelation')
 

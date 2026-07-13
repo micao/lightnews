@@ -24,6 +24,11 @@ import {
   DialogActions,
   Snackbar,
   Alert,
+  TextField,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -31,6 +36,7 @@ import StarIcon from '@mui/icons-material/Star';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
+import SendIcon from '@mui/icons-material/Send';
 import { useNavigate } from 'react-router-dom';
 import { MetricChart } from '../components/MetricChart';
 import { type Article } from '../types';
@@ -46,15 +52,21 @@ export const AdminDashboard: React.FC = () => {
   const itemsPerPage = 3;
   const navigate = useNavigate();
 
-  // 评论审核相关状态
+  // 评论与快讯审核相关状态
   const [pendingComments, setPendingComments] = useState<any[]>([]);
+  const [pendingLiveNews, setPendingLiveNews] = useState<any[]>([]);
+
+  // 主编手动发布快讯表单状态
+  const [newFlashContent, setNewFlashContent] = useState('');
+  const [newFlashUrgency, setNewFlashUrgency] = useState('normal');
+  const [newFlashTag, setNewFlashTag] = useState('前沿科技');
 
   // 弹窗与提示
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [snackbarMsg, setSnackbarMsg] = useState('');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
 
-  // 创投统计指标：每周收到的商业计划书 (Business Proposals) 数量
+  // 创投统计指标：每周收到的商业计划书数量
   const proposalsTrendData = [
     { label: 'Mon', value: 14 },
     { label: 'Tue', value: 28 },
@@ -81,7 +93,6 @@ export const AdminDashboard: React.FC = () => {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
-      // 后台可以查看全部状态
       const res = await fetch(`${API_BASE}/api/articles/?page=${page}&limit=${itemsPerPage}&status=all`, { headers });
       const data = await res.json();
       if (data.success) {
@@ -113,11 +124,33 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  // 拉取待审核快报列表
+  const fetchPendingLiveNews = async () => {
+    try {
+      const token = localStorage.getItem('lightnews_token');
+      if (!token) return;
+
+      const res = await fetch(`${API_BASE}/api/admin/livenews/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPendingLiveNews(data.news);
+      }
+    } catch (err) {
+      console.error('Fetch pending livenews error:', err);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 0) {
       fetchArticles();
     } else if (activeTab === 2) {
       fetchPendingComments();
+    } else if (activeTab === 3) {
+      fetchPendingLiveNews();
     }
   }, [page, activeTab]);
 
@@ -176,6 +209,69 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  // 处理快讯审核动作
+  const handleLiveNewsModerate = async (newsId: number, action: 'approve' | 'reject') => {
+    try {
+      const token = localStorage.getItem('lightnews_token');
+      if (!token) return;
+
+      const res = await fetch(`${API_BASE}/api/admin/livenews/approve/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ news_id: newsId, action })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSnackbarMsg(data.message || t('Audit action successful'));
+        setSnackbarOpen(true);
+        fetchPendingLiveNews(); // 刷新待审核快讯
+      } else {
+        setSnackbarMsg(data.message || t('Audit action failed'));
+        setSnackbarOpen(true);
+      }
+    } catch (err) {
+      console.error('Moderate livenews error:', err);
+    }
+  };
+
+  // 主编手动快速发布新快讯
+  const handleLiveNewsCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newFlashContent.trim()) return;
+
+    try {
+      const token = localStorage.getItem('lightnews_token');
+      if (!token) return;
+
+      const res = await fetch(`${API_BASE}/api/admin/livenews/create/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          content: newFlashContent,
+          urgency: newFlashUrgency,
+          tag: newFlashTag
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSnackbarMsg(data.message || t('Flash news published'));
+        setSnackbarOpen(true);
+        setNewFlashContent('');
+      } else {
+        setSnackbarMsg(data.message || t('Flash news publish failed'));
+        setSnackbarOpen(true);
+      }
+    } catch (err) {
+      console.error('Create livenews error:', err);
+    }
+  };
+
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   return (
@@ -212,6 +308,7 @@ export const AdminDashboard: React.FC = () => {
           <Tab label={t('Article Management')} />
           <Tab label={t('Sector Stats')} />
           <Tab label={t('Comment Moderation')} />
+          <Tab label={t('Flash News Panel')} />
         </Tabs>
 
         {/* Tab 1: 稿件列表管理 */}
@@ -378,6 +475,184 @@ export const AdminDashboard: React.FC = () => {
                 </TableBody>
               </Table>
             </TableContainer>
+          </Box>
+        )}
+
+        {/* Tab 4: 快报发布与审核中心 */}
+        {activeTab === 3 && (
+          <Box sx={{ p: 3 }}>
+            <Grid container spacing={4}>
+              {/* 左侧：手动发布表单 */}
+              <Grid size={{ xs: 12, md: 5 }}>
+                <Paper
+                  sx={{
+                    p: 3,
+                    bgcolor: 'rgba(255, 255, 255, 0.02)',
+                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                  }}
+                >
+                  <Typography variant="h6" sx={{ color: '#f8fafc', mb: 2, fontWeight: 700 }}>
+                    {t('Publish Fast News')}
+                  </Typography>
+
+                  <Box component="form" onSubmit={handleLiveNewsCreate}>
+                    <TextField
+                      fullWidth
+                      label={t('Fast News Content')}
+                      multiline
+                      rows={3}
+                      value={newFlashContent}
+                      onChange={(e) => setNewFlashContent(e.target.value)}
+                      placeholder={t('Enter fast news here...')}
+                      sx={{
+                        mb: 2.5,
+                        '& .MuiInputLabel-root': { color: '#64748b' },
+                        '& .MuiOutlinedInput-root': {
+                          color: '#f8fafc',
+                          '& fieldset': { borderColor: '#334155' },
+                          '&:hover fieldset': { borderColor: '#475569' },
+                        },
+                      }}
+                    />
+
+                    <Grid container spacing={2} sx={{ mb: 3 }}>
+                      <Grid size={{ xs: 6 }}>
+                        <FormControl fullWidth>
+                          <InputLabel sx={{ color: '#64748b' }}>{t('Urgency')}</InputLabel>
+                          <Select
+                            value={newFlashUrgency}
+                            label={t('Urgency')}
+                            onChange={(e) => setNewFlashUrgency(e.target.value)}
+                            sx={{
+                              color: '#f8fafc',
+                              '& .MuiOutlinedInput-notchedOutline': { borderColor: '#334155' },
+                              '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#475569' },
+                            }}
+                          >
+                            <MenuItem value="normal">{t('Normal')}</MenuItem>
+                            <MenuItem value="warn">{t('Warn')}</MenuItem>
+                            <MenuItem value="critical">{t('Critical')}</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Grid>
+
+                      <Grid size={{ xs: 6 }}>
+                        <FormControl fullWidth>
+                          <InputLabel sx={{ color: '#64748b' }}>{t('Tag')}</InputLabel>
+                          <Select
+                            value={newFlashTag}
+                            label={t('Tag')}
+                            onChange={(e) => setNewFlashTag(e.target.value)}
+                            sx={{
+                              color: '#f8fafc',
+                              '& .MuiOutlinedInput-notchedOutline': { borderColor: '#334155' },
+                              '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#475569' },
+                            }}
+                          >
+                            <MenuItem value="前沿科技">{t('Frontier Tech')}</MenuItem>
+                            <MenuItem value="融资">{t('VC/PE Insights')}</MenuItem>
+                            <MenuItem value="独角兽">{t('Unicorn Dynamics')}</MenuItem>
+                            <MenuItem value="大厂">{t('Console')}</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Grid>
+                    </Grid>
+
+                    <Button
+                      fullWidth
+                      type="submit"
+                      variant="contained"
+                      startIcon={<SendIcon />}
+                      sx={{ color: '#fff', py: 1.2, fontWeight: 700 }}
+                    >
+                      {t('Publish Straight')}
+                    </Button>
+                  </Box>
+                </Paper>
+              </Grid>
+
+              {/* 右侧：AI 快讯草稿审核列表 */}
+              <Grid size={{ xs: 12, md: 7 }}>
+                <Typography variant="h6" sx={{ color: '#f8fafc', mb: 2, fontWeight: 700 }}>
+                  {t('AI Draft Audits')}
+                </Typography>
+
+                <TableContainer sx={{ bgcolor: 'transparent', border: 'none' }}>
+                  <Table>
+                    <TableHead sx={{ '& th': { borderBottom: '1px solid rgba(255, 255, 255, 0.05)', color: '#64748b', fontWeight: 700 } }}>
+                      <TableRow>
+                        <TableCell>{t('Draft Content')}</TableCell>
+                        <TableCell align="center" style={{ width: 180 }}>{t('Action')}</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody sx={{ '& td': { borderBottom: '1px solid rgba(255, 255, 255, 0.04)', color: '#cbd5e1' } }}>
+                      {pendingLiveNews.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={2} align="center" sx={{ py: 6, color: '#64748b' }}>
+                            {t('No Pending Fast News')}
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        pendingLiveNews.map((news) => (
+                          <TableRow key={news.id} sx={{ '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.01)' } }}>
+                            <TableCell sx={{ fontSize: '0.875rem', lineHeight: 1.5, py: 2 }}>
+                              <Box sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
+                                <Chip
+                                  label={t(news.tag)}
+                                  size="small"
+                                  sx={{
+                                    bgcolor: 'rgba(59, 130, 246, 0.1)',
+                                    color: '#3b82f6',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                  }}
+                                />
+                                {news.urgency !== 'normal' && (
+                                  <Chip
+                                    label={news.urgency === 'critical' ? t('Critical') : t('Warn')}
+                                    size="small"
+                                    color={news.urgency === 'critical' ? 'error' : 'warning'}
+                                    sx={{ fontSize: '0.75rem', fontWeight: 700 }}
+                                  />
+                                )}
+                                <Typography variant="caption" sx={{ color: '#475569', ml: 'auto' }}>
+                                  {news.publish_time}
+                                </Typography>
+                              </Box>
+                              {news.content}
+                            </TableCell>
+                            <TableCell align="center" sx={{ py: 2 }}>
+                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                <Button
+                                  variant="outlined"
+                                  color="success"
+                                  size="small"
+                                  startIcon={<CheckIcon />}
+                                  onClick={() => handleLiveNewsModerate(news.id, 'approve')}
+                                  sx={{ py: 0.5, fontSize: '0.75rem' }}
+                                >
+                                  {t('Approve')}
+                                </Button>
+                                <Button
+                                  variant="outlined"
+                                  color="error"
+                                  size="small"
+                                  startIcon={<CloseIcon />}
+                                  onClick={() => handleLiveNewsModerate(news.id, 'reject')}
+                                  sx={{ py: 0.5, fontSize: '0.75rem' }}
+                                >
+                                  {t('Reject')}
+                                </Button>
+                              </Box>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Grid>
+            </Grid>
           </Box>
         )}
       </Paper>

@@ -115,8 +115,8 @@ def article_detail_view(request, slug):
     })
 
 def live_news_list_view(request):
-    # 获取最新的 10 条快讯
-    news_qs = LiveNews.objects.select_related('author', 'author__profile').order_by('-id')[:10]
+    # 获取已审核通过的最新的 10 条快讯
+    news_qs = LiveNews.objects.filter(is_approved=True).select_related('author', 'author__profile').order_by('-id')[:10]
     
     # 模拟数据转换，把 models.py 的 impact 利多/利空机制转换成创投快报需要的 tag 类别
     # 允许在 model 字段缺失时安全回退，如果 LiveNews 具有 impact 则进行映射
@@ -256,3 +256,121 @@ def seed_data_view(request):
         return JsonResponse({'success': True, 'message': '种子数据填充成功'})
     except Exception as e:
         return JsonResponse({'success': False, 'message': f'填充异常: {str(e)}'}, status=500)
+
+@csrf_exempt
+def admin_livenews_list_view(request):
+    """获取所有未审核的待处理快报 (管理员专用)"""
+    try:
+        user = get_authenticated_user(request)
+        if not user:
+            return JsonResponse({'success': False, 'message': '未登录'}, status=401)
+        
+        from users.views import get_user_roles
+        if 'ROLE_ADMIN_USER' not in get_user_roles(user):
+            return JsonResponse({'success': False, 'message': '权限不足'}, status=403)
+
+        news_qs = LiveNews.objects.filter(is_approved=False).select_related('author', 'author__profile').order_by('-id')
+        serialized = []
+        for item in news_qs:
+            tag_str = '前沿科技'
+            if item.impact == LiveNews.Impact.BULLISH:
+                tag_str = '融资'
+            elif item.impact == LiveNews.Impact.BEARISH:
+                tag_str = '独角兽'
+            elif item.impact == LiveNews.Impact.NEUTRAL:
+                tag_str = '大厂'
+
+            serialized.append({
+                'id': item.id,
+                'content': item.content,
+                'urgency': item.urgency,
+                'tag': tag_str,
+                'publish_time': item.publish_time.strftime('%Y-%m-%d %H:%M:%S')
+            })
+
+        return JsonResponse({
+            'success': True,
+            'news': serialized
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+@csrf_exempt
+def admin_livenews_approve_view(request):
+    """审核或驳回快报 (管理员专用)"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Method not allowed'}, status=405)
+        
+    try:
+        user = get_authenticated_user(request)
+        if not user:
+            return JsonResponse({'success': False, 'message': '未登录'}, status=401)
+        
+        from users.views import get_user_roles
+        if 'ROLE_ADMIN_USER' not in get_user_roles(user):
+            return JsonResponse({'success': False, 'message': '权限不足'}, status=403)
+
+        import json
+        body = json.loads(request.body)
+        news_id = body.get('news_id')
+        action = body.get('action') # 'approve' 或 'reject'
+
+        news_item = LiveNews.objects.filter(id=news_id).first()
+        if not news_item:
+            return JsonResponse({'success': False, 'message': '快讯不存在'}, status=404)
+
+        if action == 'approve':
+            news_item.is_approved = True
+            news_item.save()
+            return JsonResponse({'success': True, 'message': '快报发布成功！'})
+        elif action == 'reject':
+            news_item.delete()
+            return JsonResponse({'success': True, 'message': '快报已被成功驳回下架！'})
+        else:
+            return JsonResponse({'success': False, 'message': '未知操作'}, status=400)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+@csrf_exempt
+def admin_livenews_create_view(request):
+    """主编手动直接发布新快报 (管理员专用)"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Method not allowed'}, status=405)
+        
+    try:
+        user = get_authenticated_user(request)
+        if not user:
+            return JsonResponse({'success': False, 'message': '未登录'}, status=401)
+        
+        from users.views import get_user_roles
+        if 'ROLE_ADMIN_USER' not in get_user_roles(user):
+            return JsonResponse({'success': False, 'message': '权限不足'}, status=403)
+
+        import json
+        body = json.loads(request.body)
+        content = body.get('content', '').strip()
+        urgency = body.get('urgency', 'normal')
+        tag = body.get('tag', '前沿科技')
+
+        if not content:
+            return JsonResponse({'success': False, 'message': '内容不能为空'}, status=400)
+
+        impact_val = LiveNews.Impact.NEUTRAL
+        if tag == '融资':
+            impact_val = LiveNews.Impact.BULLISH
+        elif tag == '独角兽':
+            impact_val = LiveNews.Impact.BEARISH
+        elif tag == '大厂':
+            impact_val = LiveNews.Impact.NEUTRAL
+
+        LiveNews.objects.create(
+            content=content,
+            urgency=urgency,
+            impact=impact_val,
+            author=user,
+            is_approved=True
+        )
+
+        return JsonResponse({'success': True, 'message': '主编手动直接发布快报成功！'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)

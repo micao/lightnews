@@ -128,6 +128,22 @@ const ZH_TRANSLATIONS: Record<string, string> = {
   'Opening edit panel for': '正在打开编辑面板',
   'Audit action successful': '审核操作成功！',
   'Audit action failed': '审核失败',
+  'Flash News Panel': '快报发布与审核',
+  'Publish Fast News': '发布新创投快报',
+  'Fast News Content': '快讯内容正文',
+  'Urgency': '紧急程度',
+  'Tag': '分类标签',
+  'Publish Straight': '主编直接发布',
+  'AI Draft Audits': 'AI 自动编译待审草稿',
+  'Draft Content': '草稿内容与翻译',
+  'No Pending Fast News': '当前没有待审核的海外快报草稿',
+  'Normal': '普通',
+  'Warn': '警告 (黄框)',
+  'Critical': '特急突发 (红框)',
+  'Enter fast news here...': '输入 7x24 小时创投快讯正文...',
+  'Flash news published': '快报发布成功！',
+  'Flash news publish failed': '快报发布失败',
+  'Financial Overview': '全球金融大盘行情',
 };
 
 interface I18nContextType {

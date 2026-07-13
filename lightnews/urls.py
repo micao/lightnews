@@ -1,7 +1,15 @@
 from django.contrib import admin
 from django.urls import path
 from users.views import register_view, login_view, profile_view
-from news.views import article_list_view, article_detail_view, live_news_list_view, seed_data_view
+from news.views import (
+    article_list_view,
+    article_detail_view,
+    live_news_list_view,
+    seed_data_view,
+    admin_livenews_list_view,
+    admin_livenews_approve_view,
+    admin_livenews_create_view
+)
 from market.views import funding_deals_list_view
 from interactions.views import (
     comment_list_view,
@@ -43,4 +51,7 @@ urlpatterns = [
     # 管理员后台
     path('api/admin/comments/', admin_comments_view),
     path('api/admin/comments/approve/', admin_comment_approve_view),
+    path('api/admin/livenews/', admin_livenews_list_view),
+    path('api/admin/livenews/approve/', admin_livenews_approve_view),
+    path('api/admin/livenews/create/', admin_livenews_create_view),
 ]
