@@ -39,6 +39,7 @@ def serialize_article(article, request=None, is_detail=False):
         'is_vip_only': article.is_vip_only,
         'is_locked': is_locked,
         'thumbnail': article.thumbnail or '',
+        'source_url': article.source_url or '',
         'views_count': article.views_count,
         'likes_count': article.likes_count,
         'comments_count': article.comments_count,
@@ -137,6 +138,7 @@ def live_news_list_view(request):
             'content': item.content,
             'urgency': item.urgency,
             'tag': tag_str,
+            'source_url': item.source_url or '',
             'publish_time': item.publish_time.strftime('%H:%M:%S')
         })
 
@@ -287,6 +289,7 @@ def admin_livenews_list_view(request):
                 'content': item.content,
                 'urgency': item.urgency,
                 'tag': tag_str,
+                'source_url': item.source_url or '',
                 'publish_time': item.publish_time.strftime('%Y-%m-%d %H:%M:%S')
             })
 
@@ -354,6 +357,8 @@ def admin_livenews_create_view(request):
         urgency = body.get('urgency', 'normal')
         tag = body.get('tag', '前沿科技')
 
+        source_url = body.get('source_url', '').strip()
+
         if not content:
             return JsonResponse({'success': False, 'message': '内容不能为空'}, status=400)
 
@@ -370,7 +375,8 @@ def admin_livenews_create_view(request):
             urgency=urgency,
             impact=impact_val,
             author=user,
-            is_approved=True
+            is_approved=True,
+            source_url=source_url if source_url else None
         )
 
         return JsonResponse({'success': True, 'message': '主编手动直接发布快报成功！'})
@@ -412,6 +418,8 @@ def admin_article_update_view(request, article_id):
                 article.publish_at = timezone.now()
         if 'is_vip_only' in body:
             article.is_vip_only = body['is_vip_only']
+        if 'source_url' in body:
+            article.source_url = body['source_url']
         if 'category_id' in body:
             cat = Category.objects.filter(id=body['category_id']).first()
             if cat:
@@ -448,5 +456,67 @@ def admin_article_delete_view(request, article_id):
 
         article.delete()
         return JsonResponse({'success': True, 'message': '文章已永久删除！'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+@csrf_exempt
+def admin_article_upload_image_view(request, article_id):
+    """管理员上传/更改文章配图并自动生成缩略图"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Method not allowed'}, status=405)
+
+    try:
+        user = get_authenticated_user(request)
+        if not user:
+            return JsonResponse({'success': False, 'message': '未登录'}, status=401)
+
+        from users.views import get_user_roles
+        if 'ROLE_ADMIN_USER' not in get_user_roles(user):
+            return JsonResponse({'success': False, 'message': '权限不足'}, status=403)
+
+        article = Article.objects.filter(id=article_id).first()
+        if not article:
+            return JsonResponse({'success': False, 'message': '文章不存在'}, status=404)
+
+        uploaded_file = request.FILES.get('image')
+        if not uploaded_file:
+            return JsonResponse({'success': False, 'message': '未检测到上传的图片文件'}, status=400)
+
+        import os
+        from PIL import Image
+        from django.conf import settings
+
+        # 用 Pillow 打开并调整大小生成缩略图 (限制为最大 800x450, 保持高保真和极快加载速度)
+        try:
+            img = Image.open(uploaded_file)
+            
+            # 如果是 RGBA (带透明通道) 转换为 RGB 格式以保存为高质量 JPEG
+            if img.mode in ('RGBA', 'LA'):
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                background.paste(img, mask=img.split()[-1])
+                img = background
+            elif img.mode != 'RGB':
+                img = img.convert('RGB')
+                
+            img.thumbnail((800, 450))
+            
+            # 保存到本地 mediafiles/
+            os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
+            filename = f"article_{article.id}_thumb.jpg"
+            filepath = os.path.join(settings.MEDIA_ROOT, filename)
+            
+            img.save(filepath, 'JPEG', quality=85)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f'图片解析失败: {str(e)}'}, status=400)
+
+        # 更新数据库
+        article.thumbnail = f"/media/{filename}"
+        article.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': '配图修改成功，并已自动生成 800x450 缩略图！',
+            'thumbnail': article.thumbnail
+        })
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)

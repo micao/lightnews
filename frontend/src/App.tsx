@@ -20,7 +20,7 @@ const AppNavigation: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const hideTicker = ['/login', '/admin'].includes(location.pathname);
+  const hideTicker = ['/login', '/admin-dashboard'].includes(location.pathname);
 
   return (
     <>
@@ -76,7 +76,7 @@ const AppNavigation: React.FC = () => {
                       color="primary"
                       size="small"
                       startIcon={<AdminPanelSettingsIcon />}
-                      onClick={() => navigate('/admin')}
+                      onClick={() => navigate('/admin-dashboard')}
                       sx={{
                         fontSize: '0.75rem',
                         borderColor: 'rgba(0,102,255,0.3)',
@@ -144,7 +144,7 @@ export const AppContent: React.FC = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/profile" element={<Profile />} />
           <Route
-            path="/admin"
+            path="/admin-dashboard"
             element={
               <AdminRoute>
                 <AdminDashboard />

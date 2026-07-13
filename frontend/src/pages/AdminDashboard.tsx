@@ -77,6 +77,9 @@ export const AdminDashboard: React.FC = () => {
   const [editStatus, setEditStatus] = useState('draft');
   const [editIsVip, setEditIsVip] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
+  const [editThumbnail, setEditThumbnail] = useState('');
+  const [editSourceUrl, setEditSourceUrl] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // 创投统计指标：每周收到的商业计划书数量
   const proposalsTrendData = [
@@ -218,7 +221,40 @@ export const AdminDashboard: React.FC = () => {
     setEditContent(plainTextContent);
     setEditStatus(article.status || 'published');
     setEditIsVip(article.is_vip_only);
+    setEditThumbnail(article.thumbnail || '');
+    setEditSourceUrl(article.source_url || '');
     setEditDialogOpen(true);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0 || !editingArticle) return;
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append('image', file);
+
+    setUploadingImage(true);
+    try {
+      const token = localStorage.getItem('lightnews_token');
+      const res = await fetch(`${API_BASE}/api/admin/articles/${editingArticle.id}/upload-image/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEditThumbnail(data.thumbnail);
+        setSnackbarMsg(data.message || t('Image uploaded successfully'));
+      } else {
+        setSnackbarMsg(data.message || t('Upload failed'));
+      }
+    } catch (err) {
+      setSnackbarMsg(t('Upload failed'));
+      console.error('Upload image error:', err);
+    }
+    setUploadingImage(false);
+    setSnackbarOpen(true);
   };
 
   const handleEditSave = async () => {
@@ -245,6 +281,7 @@ export const AdminDashboard: React.FC = () => {
           content: formattedContent,
           status: editStatus,
           is_vip_only: editIsVip,
+          source_url: editSourceUrl,
         }),
       });
       const data = await res.json();
@@ -780,6 +817,34 @@ export const AdminDashboard: React.FC = () => {
           {t('Edit Article')}
         </DialogTitle>
         <DialogContent sx={{ mt: 2 }}>
+          {editThumbnail && (
+            <Box sx={{ mb: 2.5, textAlign: 'center' }}>
+              <img
+                src={editThumbnail.startsWith('http') ? editThumbnail : `${API_BASE}${editThumbnail}`}
+                alt={t('Article Thumbnail')}
+                style={{ width: '100%', maxHeight: 240, objectFit: 'cover', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)' }}
+              />
+            </Box>
+          )}
+
+          <Button
+            variant="outlined"
+            component="label"
+            fullWidth
+            disabled={uploadingImage}
+            sx={{
+              mb: 2.5,
+              borderColor: '#334155',
+              color: '#cbd5e1',
+              textTransform: 'none',
+              fontWeight: 650,
+              '&:hover': { borderColor: '#475569', bgcolor: 'rgba(255,255,255,0.02)' }
+            }}
+          >
+            {uploadingImage ? t('Uploading...') : t('Upload New Image')}
+            <input type="file" hidden accept="image/*" onChange={handleImageUpload} />
+          </Button>
+
           <TextField
             fullWidth
             label={t('Article Title')}
@@ -787,6 +852,22 @@ export const AdminDashboard: React.FC = () => {
             onChange={(e) => setEditTitle(e.target.value)}
             sx={{
               mt: 1, mb: 2.5,
+              '& .MuiInputLabel-root': { color: '#64748b' },
+              '& .MuiOutlinedInput-root': {
+                color: '#f8fafc',
+                '& fieldset': { borderColor: '#334155' },
+                '&:hover fieldset': { borderColor: '#475569' },
+              },
+            }}
+          />
+          <TextField
+            fullWidth
+            label={t('Source Link')}
+            value={editSourceUrl}
+            onChange={(e) => setEditSourceUrl(e.target.value)}
+            placeholder="https://example.com/original-article"
+            sx={{
+              mb: 2.5,
               '& .MuiInputLabel-root': { color: '#64748b' },
               '& .MuiOutlinedInput-root': {
                 color: '#f8fafc',

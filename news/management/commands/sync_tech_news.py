@@ -59,6 +59,7 @@ class Command(BaseCommand):
             for item in items:
                 title = item.find('title').text or ''
                 desc = item.find('description').text or ''
+                link = item.find('link').text or ''
                 
                 # 简单清洗 HTML 标签
                 desc_clean = re.sub(r'<[^>]+>', '', desc).strip()
@@ -87,6 +88,7 @@ class Command(BaseCommand):
                         urgency=LiveNews.Urgency.NORMAL,
                         impact=LiveNews.Impact.NEUTRAL,
                         author=author,
+                        source_url=link,
                         is_approved=False # 需要管理员在后台初审后才能前台展示
                     )
                     imported_count += 1

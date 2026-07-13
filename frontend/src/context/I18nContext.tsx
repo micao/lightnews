@@ -158,6 +158,12 @@ const ZH_TRANSLATIONS: Record<string, string> = {
   'Article updated': '文章更新成功！',
   'Delete failed': '删除失败',
   'Update failed': '更新失败',
+  'Upload New Image': '上传/修改配图',
+  'Uploading...': '正在上传...',
+  'Image uploaded successfully': '图片上传并生成缩略图成功！',
+  'Article Thumbnail': '文章缩略图',
+  'Upload failed': '图片上传失败',
+  'Source Link': '原文章链接 / 出处',
 };
 
 interface I18nContextType {

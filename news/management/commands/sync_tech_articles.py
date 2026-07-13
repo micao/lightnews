@@ -31,23 +31,31 @@ def translate_text(text):
     except Exception:
         return text
 
-def get_keywords_from_title(title):
-    t_lower = title.lower()
-    if any(w in t_lower for w in ['人工智能', 'ai', '智能', '模型', '算法', 'deepseek', 'gpt', 'hugging face', 'llm', '开源']):
-        return 'ai,technology'
-    if any(w in t_lower for w in ['机器人', '硬件', '无人', '物理', '工业', '制造']):
-        return 'robot,technology'
-    if any(w in t_lower for w in ['芯片', '半导体', '极客', '算力', 'zig', '软件', '代码', '编译器', '开发', '技术', '电脑']):
-        return 'code,microchip'
-    if any(w in t_lower for w in ['独角兽', '创业', '初创', '孵化', '项目', '企业', '合并', '收购', '发展', '扩张']):
-        return 'startup,office'
-    if any(w in t_lower for w in ['融资', '投资', '资本', '金额', '轮次', '估值', 'vc', 'pe', '金融', '股市', '股票', '资金']):
-        return 'finance,money'
-    if any(w in t_lower for w in ['太空', '航天', '火箭', '卫星', '商业航天', '宇宙']):
-        return 'space,rocket'
-    if any(w in t_lower for w in ['区块链', '比特币', '加密', '以太', '瑞波']):
-        return 'crypto,bitcoin'
-    return 'technology,business'
+def get_optimized_keywords(title, category_name=""):
+    title_lower = title.lower()
+    
+    # 根据标题内容映射最贴切的无版权 stock photo 关键词
+    if any(w in title_lower for w in ['ai', 'artificial intelligence', '人工智能', '智能', '模型', 'gpt', 'llm', 'deepseek', 'neural', 'hugging face']):
+        return "neural,network,artificial,intelligence"
+    if any(w in title_lower for w in ['robot', 'hardware', '机器人', '硬件', 'device', 'drone', '具身智能']):
+        return "robot,robotic,automation"
+    if any(w in title_lower for w in ['chip', 'semiconductor', '光刻', '芯片', '半导体', 'cpu', 'gpu', '算力']):
+        return "microchip,silicon,circuit"
+    if any(w in title_lower for w in ['funding', 'capital', 'finance', 'ipo', 'valuation', 'invest', '融资', '投资', '估值', '独角兽', 'unicorn', '创业', '初创']):
+        return "finance,chart,investment"
+    if any(w in title_lower for w in ['security', 'hacker', 'cookie stuffing', 'fraud', 'attack', 'leak', '安全', '黑客', '欺诈', '作弊', '窃取']):
+        return "cyber,security,shield,server"
+    if any(w in title_lower for w in ['space', 'rocket', 'satellite', '航天', '火箭', '卫星', '太空']):
+        return "rocket,space,satellite"
+    if any(w in title_lower for w in ['code', 'compiler', 'programming', 'zig', 'rust', 'python', 'php', '代码', '编译器', '程序员', '开发']):
+        return "code,programming,terminal"
+    
+    # 默认分类兜底
+    if "前沿科技" in category_name:
+        return "technology,abstract"
+    elif "独角兽" in category_name:
+        return "startup,office"
+    return "business,network"
 
 def extract_article_body(url):
     """流式下载 HTML 并解析出正文段落与头图"""
@@ -201,14 +209,14 @@ class Command(BaseCommand):
                     # 4. 头图配图下载
                     thumbnail_path = download_image(img_url, temp_slug)
                     
-                    # 降级备用：如果文章内无图，用 Pollinations.ai 根据标题生成 AI 原创图（零版权风险）
+                    # 降级备用：如果文章内无图，用 loremflickr 根据标题和分类下载匹配的高清图片
                     if not thumbnail_path:
-                        ai_prompt = f"modern digital illustration for news article: {title}, clean minimal style, vibrant colors, dark background"
-                        encoded_prompt = urllib.parse.quote(ai_prompt)
+                        combined_title = f"{title} {translated_title}"
+                        keywords = get_optimized_keywords(combined_title, feed['category'])
                         import time
-                        seed = int(time.time() * 1000) % 999999
-                        ai_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=800&height=450&nologo=true&seed={seed}"
-                        thumbnail_path = download_image(ai_url, temp_slug)
+                        lock_id = int(time.time() * 1000) % 999999
+                        fallback_url = f"https://loremflickr.com/800/450/{keywords}?lock={lock_id}"
+                        thumbnail_path = download_image(fallback_url, temp_slug)
 
                     # 5. 拼装成符合富文本排版要求的 HTML 内容
                     content_html = "".join([f"<p>{p}</p>" for p in translated_paragraphs])
@@ -220,6 +228,7 @@ class Command(BaseCommand):
                         summary=summary_text,
                         content=content_html,
                         thumbnail=thumbnail_path,
+                        source_url=link,
                         author=author,
                         category=category_obj,
                         status=Article.Status.DRAFT, # 强制设为草稿，等待管理员发布

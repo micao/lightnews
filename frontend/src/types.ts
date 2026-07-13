@@ -36,6 +36,7 @@ export interface Article {
   created_at: string;
   status?: string;
   thumbnail?: string;
+  source_url?: string;
 }
 
 export interface LiveNews {
@@ -44,6 +45,7 @@ export interface LiveNews {
   urgency: 'normal' | 'warn' | 'critical';
   tag: '融资' | '大厂' | '独角兽' | '前沿科技'; // 创投标签
   publish_time: string;
+  source_url?: string;
 }
 
 export interface Comment {

@@ -36,6 +36,7 @@ class Article(models.Model):
     summary = models.TextField(blank=True, null=True)
     content = models.TextField()
     thumbnail = models.CharField(max_length=255, blank=True, null=True)
+    source_url = models.URLField(max_length=500, blank=True, null=True)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.RESTRICT, related_name='articles')
     category = models.ForeignKey(Category, on_delete=models.RESTRICT, related_name='articles')
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
@@ -130,6 +131,7 @@ class LiveNews(models.Model):
     publish_time = models.DateTimeField(auto_now_add=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_approved = models.BooleanField(default=True)
+    source_url = models.URLField(max_length=500, blank=True, null=True)
 
     instruments = models.ManyToManyField('market.MarketInstrument', through='LiveNewsInstrumentRelation')
 
