@@ -35,6 +35,7 @@ class Article(models.Model):
     slug = models.SlugField(max_length=255, unique=True)
     summary = models.TextField(blank=True, null=True)
     content = models.TextField()
+    thumbnail = models.CharField(max_length=255, blank=True, null=True)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.RESTRICT, related_name='articles')
     category = models.ForeignKey(Category, on_delete=models.RESTRICT, related_name='articles')
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)

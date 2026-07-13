@@ -1,4 +1,4 @@
-.PHONY: dev destroy dev-frontend dev-frontend-docker makemigrations migrate check shell seed sync-deals sync-financial sync-tech
+.PHONY: dev destroy dev-frontend dev-frontend-docker makemigrations migrate check shell seed sync-deals sync-financial sync-tech sync-articles
 
 # 启动后端 Docker 容器环境
 dev:
@@ -47,3 +47,7 @@ sync-financial:
 # 自动抓取外文科技快讯翻译生成草稿待审
 sync-tech:
 	docker compose --env-file .env.dev exec web python manage.py sync_tech_news
+
+# 自动抓取英文深度报道文章，进行全文高保真翻译并自动配图生成待审草稿
+sync-articles:
+	docker compose --env-file .env.dev exec web python manage.py sync_tech_articles

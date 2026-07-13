@@ -29,6 +29,8 @@ import {
   Select,
   FormControl,
   InputLabel,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -49,7 +51,7 @@ export const AdminDashboard: React.FC = () => {
   const [articles, setArticles] = useState<Article[]>([]);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const itemsPerPage = 3;
+  const itemsPerPage = 10;
   const navigate = useNavigate();
 
   // 评论与快讯审核相关状态
@@ -65,6 +67,16 @@ export const AdminDashboard: React.FC = () => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [snackbarMsg, setSnackbarMsg] = useState('');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+
+  // 编辑文章弹窗状态
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingArticle, setEditingArticle] = useState<Article | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editSummary, setEditSummary] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [editStatus, setEditStatus] = useState('draft');
+  const [editIsVip, setEditIsVip] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
 
   // 创投统计指标：每周收到的商业计划书数量
   const proposalsTrendData = [
@@ -109,7 +121,7 @@ export const AdminDashboard: React.FC = () => {
     try {
       const token = localStorage.getItem('lightnews_token');
       if (!token) return;
-      
+
       const res = await fetch(`${API_BASE}/api/admin/comments/`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -169,15 +181,85 @@ export const AdminDashboard: React.FC = () => {
 
   const handleConfirmDelete = async () => {
     if (deleteConfirmId !== null) {
-      setArticles((prev) => prev.filter((art) => art.id !== deleteConfirmId));
+      try {
+        const token = localStorage.getItem('lightnews_token');
+        const res = await fetch(`${API_BASE}/api/admin/articles/${deleteConfirmId}/delete/`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        const data = await res.json();
+        if (data.success) {
+          setArticles((prev) => prev.filter((art) => art.id !== deleteConfirmId));
+          setTotalCount((prev) => prev - 1);
+          setSnackbarMsg(data.message || t('Article unpublished successfully'));
+        } else {
+          setSnackbarMsg(data.message || t('Delete failed'));
+        }
+      } catch (err) {
+        setSnackbarMsg(t('Delete failed'));
+        console.error('Delete article error:', err);
+      }
       setDeleteConfirmId(null);
-      setSnackbarMsg(t('Article unpublished successfully'));
       setSnackbarOpen(true);
     }
   };
 
-  const handleEditClick = (title: string) => {
-    setSnackbarMsg(`${t('Opening edit panel for')}《${title.substring(0, 10)}...》`);
+  const handleEditClick = (article: Article) => {
+    setEditingArticle(article);
+    setEditTitle(article.title);
+    setEditSummary(article.summary);
+    // 将 HTML 段落转换为纯文本的新行，使后台编辑更干净
+    const plainTextContent = article.content
+      .replace(/<\/p>\s*<p>/gi, '\n\n')
+      .replace(/<p>/gi, '')
+      .replace(/<\/p>/gi, '');
+    setEditContent(plainTextContent);
+    setEditStatus(article.status || 'published');
+    setEditIsVip(article.is_vip_only);
+    setEditDialogOpen(true);
+  };
+
+  const handleEditSave = async () => {
+    if (!editingArticle) return;
+    setEditSaving(true);
+    // 将每一行重新包装为 HTML 段落
+    const formattedContent = editContent
+      .split(/\n+/)
+      .filter((p) => p.trim() !== '')
+      .map((p) => `<p>${p.trim()}</p>`)
+      .join('');
+
+    try {
+      const token = localStorage.getItem('lightnews_token');
+      const res = await fetch(`${API_BASE}/api/admin/articles/${editingArticle.id}/`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: editTitle,
+          summary: editSummary,
+          content: formattedContent,
+          status: editStatus,
+          is_vip_only: editIsVip,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSnackbarMsg(data.message || t('Article updated'));
+        setEditDialogOpen(false);
+        fetchArticles(); // 重新加载列表
+      } else {
+        setSnackbarMsg(data.message || t('Update failed'));
+      }
+    } catch (err) {
+      setSnackbarMsg(t('Update failed'));
+      console.error('Edit article error:', err);
+    }
+    setEditSaving(false);
     setSnackbarOpen(true);
   };
 
@@ -355,7 +437,7 @@ export const AdminDashboard: React.FC = () => {
                       <TableCell>{art.publish_at.split(' ')[0]}</TableCell>
                       <TableCell align="center">
                         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
-                          <IconButton size="small" color="primary" onClick={() => handleEditClick(art.title)}>
+                          <IconButton size="small" color="primary" onClick={() => handleEditClick(art)}>
                             <EditIcon fontSize="small" />
                           </IconButton>
                           <IconButton size="small" color="error" onClick={() => handleDeleteClick(art.id)}>
@@ -675,6 +757,125 @@ export const AdminDashboard: React.FC = () => {
           </Button>
           <Button onClick={handleConfirmDelete} variant="contained" color="error" autoFocus>
             {t('Confirm')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 编辑文章弹窗 */}
+      <Dialog
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+        sx={{
+          '& .MuiDialog-paper': {
+            bgcolor: '#101726',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            backgroundImage: 'none',
+            maxHeight: '85vh',
+          },
+        }}
+      >
+        <DialogTitle sx={{ color: '#f8fafc', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          {t('Edit Article')}
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <TextField
+            fullWidth
+            label={t('Article Title')}
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            sx={{
+              mt: 1, mb: 2.5,
+              '& .MuiInputLabel-root': { color: '#64748b' },
+              '& .MuiOutlinedInput-root': {
+                color: '#f8fafc',
+                '& fieldset': { borderColor: '#334155' },
+                '&:hover fieldset': { borderColor: '#475569' },
+              },
+            }}
+          />
+          <TextField
+            fullWidth
+            label={t('Summary')}
+            multiline
+            rows={2}
+            value={editSummary}
+            onChange={(e) => setEditSummary(e.target.value)}
+            sx={{
+              mb: 2.5,
+              '& .MuiInputLabel-root': { color: '#64748b' },
+              '& .MuiOutlinedInput-root': {
+                color: '#f8fafc',
+                '& fieldset': { borderColor: '#334155' },
+                '&:hover fieldset': { borderColor: '#475569' },
+              },
+            }}
+          />
+          <TextField
+            fullWidth
+            label={t('Content')}
+            multiline
+            rows={8}
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            sx={{
+              mb: 2.5,
+              '& .MuiInputLabel-root': { color: '#64748b' },
+              '& .MuiOutlinedInput-root': {
+                color: '#f8fafc',
+                '& fieldset': { borderColor: '#334155' },
+                '&:hover fieldset': { borderColor: '#475569' },
+              },
+            }}
+          />
+          <Grid container spacing={2} sx={{ mb: 1 }}>
+            <Grid size={{ xs: 6 }}>
+              <FormControl fullWidth>
+                <InputLabel sx={{ color: '#64748b' }}>{t('Status')}</InputLabel>
+                <Select
+                  value={editStatus}
+                  label={t('Status')}
+                  onChange={(e) => setEditStatus(e.target.value)}
+                  sx={{
+                    color: '#f8fafc',
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#334155' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#475569' },
+                  }}
+                >
+                  <MenuItem value="draft">{t('Draft')}</MenuItem>
+                  <MenuItem value="under_review">{t('Under Review')}</MenuItem>
+                  <MenuItem value="published">{t('Published')}</MenuItem>
+                  <MenuItem value="archived">{t('Archived')}</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 6 }} sx={{ display: 'flex', alignItems: 'center' }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={editIsVip}
+                    onChange={(e) => setEditIsVip(e.target.checked)}
+                    color="secondary"
+                  />
+                }
+                label={t('VIP Exclusive')}
+                sx={{ color: '#94a3b8', ml: 1 }}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <Button onClick={() => setEditDialogOpen(false)} sx={{ color: '#94a3b8' }}>
+            {t('Cancel')}
+          </Button>
+          <Button
+            onClick={handleEditSave}
+            variant="contained"
+            disabled={editSaving}
+            sx={{ color: '#fff', fontWeight: 700 }}
+          >
+            {editSaving ? t('Saving...') : t('Save')}
           </Button>
         </DialogActions>
       </Dialog>

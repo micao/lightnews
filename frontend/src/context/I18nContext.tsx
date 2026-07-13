@@ -144,6 +144,20 @@ const ZH_TRANSLATIONS: Record<string, string> = {
   'Flash news published': '快报发布成功！',
   'Flash news publish failed': '快报发布失败',
   'Financial Overview': '全球金融大盘行情',
+  'Edit Article': '编辑文章',
+  'Summary': '摘要',
+  'Content': '正文内容',
+  'Status': '发布状态',
+  'Draft': '草稿',
+  'Under Review': '待审核',
+  'Published': '已发布',
+  'Archived': '已存档',
+  'VIP Exclusive': 'VIP 专属',
+  'Save': '保存修改',
+  'Saving...': '保存中...',
+  'Article updated': '文章更新成功！',
+  'Delete failed': '删除失败',
+  'Update failed': '更新失败',
 };
 
 interface I18nContextType {

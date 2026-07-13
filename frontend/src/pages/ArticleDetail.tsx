@@ -168,6 +168,21 @@ export const ArticleDetail: React.FC = () => {
         {/* 文章主体 */}
         <Grid size={{ xs: 12, md: 8 }}>
           <Paper sx={{ p: 4, bgcolor: '#101726', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+            {article.thumbnail && (
+              <Box
+                component="img"
+                src={article.thumbnail}
+                alt={article.title}
+                sx={{
+                  width: '100%',
+                  maxHeight: 380,
+                  objectFit: 'cover',
+                  borderRadius: 2,
+                  mb: 4,
+                  border: '1px solid rgba(255, 255, 255, 0.05)'
+                }}
+              />
+            )}
             <Box sx={{ mb: 2 }}>
               <Chip label={t(article.category.name)} color="primary" variant="outlined" size="small" sx={{ mb: 2, borderColor: 'primary.main', color: 'primary.main' }} />
               {article.is_vip_only && (

@@ -1,0 +1,234 @@
+import os
+import re
+import json
+import urllib.request
+import urllib.parse
+import xml.etree.ElementTree as ET
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+from django.conf import settings
+from django.utils.text import slugify
+from news.models import Article, Category
+from users.models import User
+
+def translate_text(text):
+    """0 Token 谷歌翻译 API"""
+    if not text:
+        return ""
+    try:
+        # 谷歌翻译可能限制单次请求长度，切片以防异常
+        if len(text) > 1500:
+            parts = [text[i:i+1500] for i in range(0, len(text), 1500)]
+            return "".join([translate_text(p) for p in parts])
+
+        url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&q=" + urllib.parse.quote(text)
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=10) as response:
+            res_json = json.loads(response.read().decode())
+        
+        translated = "".join([part[0] for part in res_json[0] if part[0]])
+        return translated.strip()
+    except Exception:
+        return text
+
+def get_keywords_from_title(title):
+    t_lower = title.lower()
+    if any(w in t_lower for w in ['人工智能', 'ai', '智能', '模型', '算法', 'deepseek', 'gpt', 'hugging face', 'llm', '开源']):
+        return 'ai,technology'
+    if any(w in t_lower for w in ['机器人', '硬件', '无人', '物理', '工业', '制造']):
+        return 'robot,technology'
+    if any(w in t_lower for w in ['芯片', '半导体', '极客', '算力', 'zig', '软件', '代码', '编译器', '开发', '技术', '电脑']):
+        return 'code,microchip'
+    if any(w in t_lower for w in ['独角兽', '创业', '初创', '孵化', '项目', '企业', '合并', '收购', '发展', '扩张']):
+        return 'startup,office'
+    if any(w in t_lower for w in ['融资', '投资', '资本', '金额', '轮次', '估值', 'vc', 'pe', '金融', '股市', '股票', '资金']):
+        return 'finance,money'
+    if any(w in t_lower for w in ['太空', '航天', '火箭', '卫星', '商业航天', '宇宙']):
+        return 'space,rocket'
+    if any(w in t_lower for w in ['区块链', '比特币', '加密', '以太', '瑞波']):
+        return 'crypto,bitcoin'
+    return 'technology,business'
+
+def extract_article_body(url):
+    """流式下载 HTML 并解析出正文段落与头图"""
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as response:
+            html = response.read().decode('utf-8', errors='ignore')
+        
+        # 1. 提取首张大图
+        img_url = None
+        img_matches = re.findall(r'<img[^>]+src=["\'](https?://[^"\']+\.(?:jpg|jpeg|png))["\']', html)
+        for img in img_matches:
+            if 'avatar' not in img.lower() and 'logo' not in img.lower() and 'icon' not in img.lower() and 'ad' not in img.lower():
+                img_url = img
+                break
+
+        # 2. 过滤垃圾 HTML 块
+        html_clean = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL)
+        html_clean = re.sub(r'<style[^>]*>.*?</style>', '', html_clean, flags=re.DOTALL)
+        html_clean = re.sub(r'<nav[^>]*>.*?</nav>', '', html_clean, flags=re.DOTALL)
+        html_clean = re.sub(r'<header[^>]*>.*?</header>', '', html_clean, flags=re.DOTALL)
+        html_clean = re.sub(r'<footer[^>]*>.*?</footer>', '', html_clean, flags=re.DOTALL)
+
+        # 3. 提取所有 <p> 标签文字段落
+        p_matches = re.findall(r'<p[^>]*>(.*?)</p>', html_clean, flags=re.DOTALL)
+        paragraphs = []
+        for p in p_matches:
+            txt = re.sub(r'<[^>]+>', '', p).strip()
+            # 过滤掉较短的修饰性语句
+            if len(txt) > 50 and 'javascript' not in txt.lower():
+                paragraphs.append(txt)
+                
+        return paragraphs, img_url
+    except Exception:
+        return [], None
+
+def download_image(url, slug_str):
+    """安全下载图片保存到本地 mediafiles"""
+    if not url or not url.startswith('http'):
+        return None
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        req = urllib.request.Request(url, headers=headers)
+        
+        safe_slug = re.sub(r'[^a-zA-Z0-9_-]', '', slug_str)
+        filename = f"scraped_{safe_slug[:40]}.png"
+        filepath = os.path.join(settings.MEDIA_ROOT, filename)
+        
+        with urllib.request.urlopen(req, timeout=10) as response:
+            with open(filepath, 'wb') as f:
+                f.write(response.read())
+                
+        return f"/media/{filename}"
+    except Exception:
+        return None
+
+class Command(BaseCommand):
+    help = 'Fetch full articles from tech sites, translate and summarize, and save as pending drafts'
+
+    def handle(self, *args, **options):
+        self.stdout.write('Initializing full-text tech articles synchronization scraper...')
+
+        feeds = [
+            {
+                'url': 'https://techcrunch.com/category/startups/feed/',
+                'category': '独角兽动态',
+                'name': 'TechCrunch Startups'
+            },
+            {
+                'url': 'https://venturebeat.com/feed/',
+                'category': '前沿科技',
+                'name': 'VentureBeat AI'
+            },
+            {
+                'url': 'https://news.ycombinator.com/rss',
+                'category': 'VC/PE观察',
+                'name': 'Hacker News'
+            }
+        ]
+
+        # 获取默认作者
+        author = User.objects.filter(username='admin_editor').first()
+        if not author:
+            author = User.objects.filter(is_superuser=True).first()
+        if not author:
+            author = User.objects.first()
+
+        if not author:
+            self.stdout.write(self.style.ERROR('No author found in database.'))
+            return
+
+        total_scraped = 0
+
+        for feed in feeds:
+            self.stdout.write(f"Scraping RSS feed: {feed['name']}...")
+            try:
+                req = urllib.request.Request(
+                    feed['url'],
+                    headers={'User-Agent': 'Mozilla/5.0'}
+                )
+                with urllib.request.urlopen(req, timeout=10) as response:
+                    xml_data = response.read()
+
+                root = ET.fromstring(xml_data)
+                # 每家源只取最新 2 篇进行深度爬取，防止请求负荷过高
+                items = root.findall('.//item')[:2]
+
+                category_obj = Category.objects.filter(name=feed['category']).first()
+                if not category_obj:
+                    category_obj = Category.objects.first()
+
+                for item in items:
+                    title = item.find('title').text or ''
+                    link = item.find('link').text or ''
+                    
+                    if not link:
+                        continue
+
+                    # 判定文章是否已抓取过 (根据标题模糊去重)
+                    title_clean = re.sub(r'[^a-zA-Z0-9]', '', title).lower()[:30]
+                    # 我们也可以根据 slug 进行校验
+                    temp_slug = slugify(title[:100])
+                    exists = Article.objects.filter(slug__icontains=temp_slug[:20]).exists()
+                    if exists:
+                        continue
+
+                    self.stdout.write(f" -> Fetching full text from: {link}")
+                    paragraphs, img_url = extract_article_body(link)
+
+                    if not paragraphs:
+                        self.stdout.write(self.style.WARNING("    No article body paragraphs extracted. Skipping..."))
+                        continue
+
+                    # 1. 全文翻译
+                    translated_paragraphs = []
+                    for idx, para in enumerate(paragraphs[:10]):  # 最多翻译前 10 段，限制篇幅
+                        self.stdout.write(f"    Translating paragraph {idx+1}/{min(len(paragraphs), 10)}...")
+                        translated_para = translate_text(para)
+                        translated_paragraphs.append(translated_para)
+
+                    # 2. 翻译标题
+                    translated_title = translate_text(title)
+
+                    # 3. 生成核心摘要 (取前两段中文翻译的切片，控制在 150 字内)
+                    abstract_paragraphs = [p for p in translated_paragraphs if p]
+                    summary_text = "，".join(abstract_paragraphs[:2])
+                    if len(summary_text) > 180:
+                        summary_text = summary_text[:177] + "..."
+
+                    # 4. 头图配图下载
+                    thumbnail_path = download_image(img_url, temp_slug)
+                    
+                    # 降级备用：如果文章内无图，用 Pollinations.ai 根据标题生成 AI 原创图（零版权风险）
+                    if not thumbnail_path:
+                        ai_prompt = f"modern digital illustration for news article: {title}, clean minimal style, vibrant colors, dark background"
+                        encoded_prompt = urllib.parse.quote(ai_prompt)
+                        import time
+                        seed = int(time.time() * 1000) % 999999
+                        ai_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=800&height=450&nologo=true&seed={seed}"
+                        thumbnail_path = download_image(ai_url, temp_slug)
+
+                    # 5. 拼装成符合富文本排版要求的 HTML 内容
+                    content_html = "".join([f"<p>{p}</p>" for p in translated_paragraphs])
+
+                    # 6. 保存为待审核草稿 (status = DRAFT)
+                    Article.objects.create(
+                        title=translated_title,
+                        slug=f"scraped-{temp_slug[:150]}-{timezone.now().strftime('%s')}",
+                        summary=summary_text,
+                        content=content_html,
+                        thumbnail=thumbnail_path,
+                        author=author,
+                        category=category_obj,
+                        status=Article.Status.DRAFT, # 强制设为草稿，等待管理员发布
+                        importance=3
+                    )
+                    total_scraped += 1
+                    self.stdout.write(self.style.SUCCESS(f"    Successfully imported draft: {translated_title}"))
+
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f"Error scraping {feed['name']}: {e}"))
+
+        self.stdout.write(self.style.SUCCESS(f"Scraper run complete. Scraped {total_scraped} new articles as drafts."))

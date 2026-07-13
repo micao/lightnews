@@ -168,13 +168,29 @@ export const Home: React.FC = () => {
               <Box
                 sx={{
                   height: 260,
-                  background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
+                  backgroundImage: displayedArticles[0].thumbnail ? `url(${displayedArticles[0].thumbnail})` : 'none',
+                  background: !displayedArticles[0].thumbnail ? 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)' : undefined,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   position: 'relative',
                 }}
               >
+                {displayedArticles[0].thumbnail && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      bgcolor: 'rgba(15, 23, 42, 0.65)',
+                      zIndex: 1,
+                    }}
+                  />
+                )}
                 <Box
                   sx={{
                     position: 'absolute',
@@ -182,6 +198,7 @@ export const Home: React.FC = () => {
                     left: 16,
                     display: 'flex',
                     gap: 1,
+                    zIndex: 2,
                   }}
                 >
                   <Chip label={t('Deep Research')} color="primary" size="small" sx={{ fontWeight: 700 }} />
@@ -194,7 +211,7 @@ export const Home: React.FC = () => {
                     />
                   )}
                 </Box>
-                <Typography variant="h3" sx={{ color: 'primary.main', textAlign: 'center', px: 4, fontWeight: 900 }}>
+                <Typography variant="h3" sx={{ color: '#fff', textAlign: 'center', px: 4, fontWeight: 900, zIndex: 2, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
                   {t('LIGHT IN THE BRAIN')}
                 </Typography>
               </Box>
@@ -261,23 +278,32 @@ export const Home: React.FC = () => {
                   onClick={() => handleArticleClick(item.slug)}
                 >
                   <Grid container>
-                    <Grid size={{ xs: 12, sm: 4 }} sx={{ display: 'flex', alignItems: 'stretch' }}>
+                    <Grid size={{ xs: 12, sm: 4 }} sx={{ display: 'flex', alignItems: 'stretch', overflow: 'hidden', borderRadius: '10px 0 0 10px' }}>
                       <Box
                         sx={{
                           width: '100%',
                           minHeight: 140,
-                          background: item.id % 2 === 0
+                          backgroundImage: item.thumbnail ? `url(${item.thumbnail})` : 'none',
+                          background: !item.thumbnail ? (item.id % 2 === 0
                             ? 'linear-gradient(135deg, #101726 0%, #1e293b 100%)'
-                            : 'linear-gradient(135deg, #080c14 0%, #111827 100%)',
+                            : 'linear-gradient(135deg, #080c14 0%, #111827 100%)') : undefined,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           color: '#64748b',
+                          transition: 'transform 0.3s ease',
+                          '&:hover': {
+                            transform: item.thumbnail ? 'scale(1.05)' : 'none',
+                          }
                         }}
                       >
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                          {t(item.category.name)}
-                        </Typography>
+                        {!item.thumbnail && (
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                            {t(item.category.name)}
+                          </Typography>
+                        )}
                       </Box>
                     </Grid>
                     

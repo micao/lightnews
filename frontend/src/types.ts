@@ -34,6 +34,8 @@ export interface Article {
   comments_count: number;
   publish_at: string;
   created_at: string;
+  status?: string;
+  thumbnail?: string;
 }
 
 export interface LiveNews {

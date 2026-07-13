@@ -35,8 +35,10 @@ def serialize_article(article, request=None, is_detail=False):
         'slug': article.slug,
         'summary': article.summary or '',
         'content': content,
+        'status': article.status,
         'is_vip_only': article.is_vip_only,
         'is_locked': is_locked,
+        'thumbnail': article.thumbnail or '',
         'views_count': article.views_count,
         'likes_count': article.likes_count,
         'comments_count': article.comments_count,
@@ -372,5 +374,79 @@ def admin_livenews_create_view(request):
         )
 
         return JsonResponse({'success': True, 'message': '主编手动直接发布快报成功！'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+@csrf_exempt
+def admin_article_update_view(request, article_id):
+    """管理员编辑文章 (支持修改标题、摘要、内容、分类、状态、VIP标识)"""
+    if request.method != 'PUT' and request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Method not allowed'}, status=405)
+
+    try:
+        user = get_authenticated_user(request)
+        if not user:
+            return JsonResponse({'success': False, 'message': '未登录'}, status=401)
+
+        from users.views import get_user_roles
+        if 'ROLE_ADMIN_USER' not in get_user_roles(user):
+            return JsonResponse({'success': False, 'message': '权限不足'}, status=403)
+
+        import json
+        body = json.loads(request.body)
+
+        article = Article.objects.filter(id=article_id).first()
+        if not article:
+            return JsonResponse({'success': False, 'message': '文章不存在'}, status=404)
+
+        # 更新各字段 (仅更新前端传来的字段)
+        if 'title' in body:
+            article.title = body['title']
+        if 'summary' in body:
+            article.summary = body['summary']
+        if 'content' in body:
+            article.content = body['content']
+        if 'status' in body and body['status'] in [s[0] for s in Article.Status.choices]:
+            article.status = body['status']
+            if body['status'] == Article.Status.PUBLISHED and not article.publish_at:
+                article.publish_at = timezone.now()
+        if 'is_vip_only' in body:
+            article.is_vip_only = body['is_vip_only']
+        if 'category_id' in body:
+            cat = Category.objects.filter(id=body['category_id']).first()
+            if cat:
+                article.category = cat
+
+        article.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': '文章更新成功！',
+            'article': serialize_article(article, request)
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+@csrf_exempt
+def admin_article_delete_view(request, article_id):
+    """管理员删除文章"""
+    if request.method != 'DELETE' and request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Method not allowed'}, status=405)
+
+    try:
+        user = get_authenticated_user(request)
+        if not user:
+            return JsonResponse({'success': False, 'message': '未登录'}, status=401)
+
+        from users.views import get_user_roles
+        if 'ROLE_ADMIN_USER' not in get_user_roles(user):
+            return JsonResponse({'success': False, 'message': '权限不足'}, status=403)
+
+        article = Article.objects.filter(id=article_id).first()
+        if not article:
+            return JsonResponse({'success': False, 'message': '文章不存在'}, status=404)
+
+        article.delete()
+        return JsonResponse({'success': True, 'message': '文章已永久删除！'})
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
