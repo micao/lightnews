@@ -103,16 +103,16 @@ def login_view(request):
         password = data.get('password', '').strip()
         role_type = data.get('roleType', 'user') # 'admin' 或 'user'
         
-        # 开发及快捷调试便捷机制：支持一键模拟登录
+        # 开发及快捷调试便捷机制：仅允许默认模拟用户进行无密码快捷登陆，其余用户强制使用密码验证
         user = None
-        if not password:
-            # 如果没有输入密码，检测是否为快捷模拟
-            if role_type == 'admin':
+        if not password and username in ['', 'guest_user', 'admin_editor']:
+            # 如果没有输入密码，且为默认的模拟用户名，则进入快捷调试通道
+            if role_type == 'admin' or username == 'admin_editor':
                 username = 'admin_editor'
             else:
-                username = username or 'guest_user'
+                username = 'guest_user'
                 
-            # 自动创建模拟用户
+            # 自动创建或获取模拟用户
             user, created = User.objects.get_or_create(username=username)
             if created:
                 user.set_password('default_pass_123')
@@ -144,7 +144,10 @@ def login_view(request):
                 if updated:
                     user.save()
         else:
-            # 标准密码认证
+            # 标准密码校验
+            if not password:
+                return JsonResponse({'success': False, 'message': '密码不能为空'}, status=400)
+                
             user = authenticate(username=username, password=password)
             if not user:
                 # 尝试用手机号认证

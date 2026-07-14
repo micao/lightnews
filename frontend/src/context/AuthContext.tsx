@@ -5,7 +5,8 @@ export const API_BASE = 'http://localhost';
 
 interface AuthContextType {
   user: User | null;
-  login: (username: string, roleType: 'admin' | 'user') => Promise<boolean>;
+  login: (username: string, password?: string, roleType?: 'admin' | 'user') => Promise<boolean>;
+  register: (username: string, password: string, nickname?: string, phoneNumber?: string) => Promise<boolean>;
   logout: () => void;
   hasRole: (role: UserRole) => boolean;
   loading: boolean;
@@ -50,14 +51,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const login = async (username: string, roleType: 'admin' | 'user'): Promise<boolean> => {
+  const login = async (username: string, password?: string, roleType?: 'admin' | 'user'): Promise<boolean> => {
     try {
       const res = await fetch(`${API_BASE}/api/auth/login/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ username, roleType })
+        body: JSON.stringify({ username, password, roleType })
       });
       
       const data = await res.json();
@@ -72,6 +73,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return false;
   };
 
+  const register = async (username: string, password: string, nickname?: string, phoneNumber?: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/register/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username,
+          password,
+          nickname,
+          phone_number: phoneNumber
+        })
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        localStorage.setItem('lightnews_token', data.token);
+        setUser(data.user);
+        return true;
+      }
+    } catch (err) {
+      console.error('Register error:', err);
+    }
+    return false;
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('lightnews_token');
@@ -82,7 +110,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, hasRole, loading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, hasRole, loading }}>
       {children}
     </AuthContext.Provider>
   );

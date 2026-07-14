@@ -33,5 +33,5 @@ else
     echo "Starting Production Server (Gunicorn)..."
     # 生产环境：收集静态文件，并启动 Gunicorn
     python manage.py collectstatic --noinput
-    gunicorn myproject.wsgi:application --bind 0.0.0.0:8000 --workers 3
+    gunicorn lightnews.wsgi:application --bind 0.0.0.0:8000 --workers 3
 fi
