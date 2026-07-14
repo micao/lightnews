@@ -61,8 +61,8 @@ jobs:
           docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" -p "${{ secrets.DOCKERHUB_TOKEN }}"
           docker compose --env-file .env.prod -f docker-compose.yaml pull
           
-          # 3. 平滑更新业务容器（保持数据库容器 db 不重启、不中断）
-          docker compose --env-file .env.prod -f docker-compose.yaml up -d --remove-orphans --no-deps web nginx
+          # 3. 平滑拉起/更新所有服务容器（若 db 已在运行，它会保持运行且不会被中断或重启）
+          docker compose --env-file .env.prod -f docker-compose.yaml up -d --remove-orphans
           
           # 4. 执行 Django 数据库迁移
           docker compose --env-file .env.prod -f docker-compose.yaml exec -T web python manage.py migrate --noinput
