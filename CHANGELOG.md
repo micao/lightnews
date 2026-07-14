@@ -43,3 +43,5 @@
     *   修复并处理了包括 [Home.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/pages/Home.tsx)、[ArticleDetail.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/pages/ArticleDetail.tsx) 与 [AdminDashboard.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/pages/AdminDashboard.tsx) 等页面的 4 项 React Hook `exhaustive-deps` 缺失依赖警告。
     *   在 [AuthContext.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/context/AuthContext.tsx) 与 [I18nContext.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/context/I18nContext.tsx) 中添加了 ESLint 注释，解决了 2 项关于 Fast Refresh 混杂导出的警告。
     *   本地核查命令 `make lint-frontend` 已实现 **0 警告，0 报错**。
+*   **部署阶段数据库连接失败修复**:
+    *   移除了 CD 重启阶段的 `--no-deps` 限制。解决了当数据库 `db` 服务本身尚未启动时，直接应用 `--no-deps web nginx` 会导致容器间无法解析 `db` 主机名（Temporary failure in name resolution）的问题。现在 Docker Compose 会智能识别并拉起未启动的 `db` 容器，而对于已在线的 `db` 容器则保持无缝运行。
