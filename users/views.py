@@ -1,9 +1,12 @@
 import json
 import uuid
+
+from django.contrib.auth import authenticate
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth import authenticate
+
 from users.models import User, UserProfile, UserToken
+
 
 def get_authenticated_user(request):
     """从 Authorization 头部解析 Token 并获取用户"""
@@ -47,23 +50,23 @@ def serialize_user(user):
 def register_view(request):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': '仅支持 POST 请求'}, status=405)
-    
+
     try:
         data = json.loads(request.body)
         username = data.get('username', '').strip()
         password = data.get('password', '').strip()
         phone_number = data.get('phone_number', '').strip()
         nickname = data.get('nickname', '').strip()
-        
+
         if not username or not password:
             return JsonResponse({'success': False, 'message': '用户名和密码不能为空'}, status=400)
-            
+
         if User.objects.filter(username=username).exists():
             return JsonResponse({'success': False, 'message': '用户名已存在'}, status=400)
-            
+
         if phone_number and User.objects.filter(phone_number=phone_number).exists():
             return JsonResponse({'success': False, 'message': '手机号已被绑定'}, status=400)
-            
+
         # 创建用户并保存默认角色
         user = User.objects.create_user(
             username=username,
@@ -71,7 +74,7 @@ def register_view(request):
             phone_number=phone_number if phone_number else None,
             roles=['ROLE_USER']
         )
-        
+
         # 创建 Profile
         profile = UserProfile.objects.create(
             user=user,
@@ -79,11 +82,11 @@ def register_view(request):
             avatar_url='',
             bio='新注册研究员'
         )
-        
+
         # 创建 Token
         token_str = uuid.uuid4().hex
         UserToken.objects.create(user=user, token=token_str)
-        
+
         return JsonResponse({
             'success': True,
             'token': token_str,
@@ -96,13 +99,13 @@ def register_view(request):
 def login_view(request):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': '仅支持 POST 请求'}, status=405)
-        
+
     try:
         data = json.loads(request.body)
         username = data.get('username', '').strip()
         password = data.get('password', '').strip()
         role_type = data.get('roleType', 'user') # 'admin' 或 'user'
-        
+
         # 开发及快捷调试便捷机制：仅允许默认模拟用户进行无密码快捷登陆，其余用户强制使用密码验证
         user = None
         if not password and username in ['', 'guest_user', 'admin_editor']:
@@ -111,7 +114,7 @@ def login_view(request):
                 username = 'admin_editor'
             else:
                 username = 'guest_user'
-                
+
             # 自动创建或获取模拟用户
             user, created = User.objects.get_or_create(username=username)
             if created:
@@ -147,7 +150,7 @@ def login_view(request):
             # 标准密码校验
             if not password:
                 return JsonResponse({'success': False, 'message': '密码不能为空'}, status=400)
-                
+
             user = authenticate(username=username, password=password)
             if not user:
                 # 尝试用手机号认证
@@ -156,14 +159,14 @@ def login_view(request):
                     user = authenticate(username=user_by_phone.username, password=password)
                 except User.DoesNotExist:
                     pass
-                    
+
         if not user:
             return JsonResponse({'success': False, 'message': '用户名或密码错误'}, status=400)
-            
+
         # 签发 Token
         token_str = uuid.uuid4().hex
         UserToken.objects.create(user=user, token=token_str)
-        
+
         return JsonResponse({
             'success': True,
             'token': token_str,
@@ -177,13 +180,13 @@ def profile_view(request):
     user = get_authenticated_user(request)
     if not user:
         return JsonResponse({'success': False, 'message': '未授权或 Token 已过期'}, status=401)
-        
+
     if request.method == 'GET':
         return JsonResponse({
             'success': True,
             'user': serialize_user(user)
         })
-        
+
     elif request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -201,5 +204,5 @@ def profile_view(request):
             })
         except Exception as e:
             return JsonResponse({'success': False, 'message': f'更新个人信息失败: {str(e)}'}, status=500)
-            
+
     return JsonResponse({'success': False, 'message': '不支持的请求方法'}, status=405)

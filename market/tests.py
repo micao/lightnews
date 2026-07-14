@@ -1,6 +1,8 @@
-from django.test import TestCase, Client
+from django.test import Client, TestCase
 from django.urls import reverse
+
 from market.models import FundingDeal
+
 
 class MarketTickerAPITests(TestCase):
     def setUp(self):
@@ -16,11 +18,11 @@ class MarketTickerAPITests(TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertTrue(data['success'])
-        
+
         # 3. 验证数据库中已经产生了种子数据记录
         self.assertTrue(FundingDeal.objects.count() > 0)
         self.assertEqual(len(data['deals']), 10) # 返回最新的 10 条
-        
+
         # 验证返回结构包含公司名和融资金额等关键要素
         first_deal = data['deals'][0]
         self.assertIn('company', first_deal)
@@ -44,7 +46,7 @@ class MarketTickerAPITests(TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertTrue(data['success'])
-        
+
         # 3. 验证接口仅返回手动写入的那 1 条，并没有触发自动填充
         self.assertEqual(len(data['deals']), 1)
         self.assertEqual(data['deals'][0]['company'], '月之暗面 (Moonshot AI)')

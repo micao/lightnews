@@ -1,5 +1,7 @@
 from django.contrib import admin
+
 from news.models import Article, Category, Tag
+
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):

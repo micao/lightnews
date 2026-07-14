@@ -1,13 +1,14 @@
-import os
-import re
 import json
-import urllib.request
+import re
 import urllib.parse
+import urllib.request
 import xml.etree.ElementTree as ET
+
 from django.core.management.base import BaseCommand
-from django.utils import timezone
+
 from news.models import LiveNews
 from users.models import User
+
 
 def translate_text(text):
     """使用免费谷歌翻译 API 实现 0 Token 高速翻译"""
@@ -18,11 +19,11 @@ def translate_text(text):
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=10) as response:
             res_json = json.loads(response.read().decode())
-        
+
         # 拼接分段翻译结果
         translated = "".join([part[0] for part in res_json[0] if part[0]])
         return translated.strip()
-    except Exception as e:
+    except Exception:
         # 降级处理：若翻译失败返回原文
         return text
 
@@ -43,7 +44,7 @@ class Command(BaseCommand):
 
             root = ET.fromstring(xml_data)
             items = root.findall('.//item')[:3]  # 只处理最新的 3 条以防过度占用连接
-            
+
             author = User.objects.filter(username='admin_editor').first()
             if not author:
                 author = User.objects.filter(is_superuser=True).first()
@@ -60,7 +61,7 @@ class Command(BaseCommand):
                 title = item.find('title').text or ''
                 desc = item.find('description').text or ''
                 link = item.find('link').text or ''
-                
+
                 # 简单清洗 HTML 标签
                 desc_clean = re.sub(r'<[^>]+>', '', desc).strip()
                 # 截断描述以防太长
@@ -73,7 +74,7 @@ class Command(BaseCommand):
 
                 # 组合最终快报格式
                 content_text = f"【海外编译】{translated_title}。简报：{translated_desc}"
-                
+
                 # 限制长度以防正文溢出
                 if len(content_text) > 400:
                     content_text = content_text[:397] + "..."

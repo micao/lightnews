@@ -1,0 +1,32 @@
+[tool.ruff]
+# 目标 Python 版本
+target-version = "py312"
+
+# 每行长度限制
+line-length = 120
+
+# 排除目录
+exclude = [
+    ".git",
+    "**/migrations/*.py",
+    "__pycache__",
+    "venv",
+    ".venv",
+]
+
+[tool.ruff.lint]
+# 开启的 lint 规则类别
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort (自动排序 import)
+    "C90", # mccabe 复杂度检查
+]
+
+# 忽略的具体规则
+ignore = ["E501", "C901", "F841"]
+
+[tool.ruff.lint.mccabe]
+# 圈复杂度上限
+max-complexity = 15

@@ -1,9 +1,11 @@
-import os
 import re
 import urllib.request
 import xml.etree.ElementTree as ET
+
 from django.core.management.base import BaseCommand
+
 from market.models import FundingDeal
+
 
 class Command(BaseCommand):
     help = 'Synchronize latest funding deals from 36Kr and TechCrunch RSS feeds'
@@ -37,9 +39,9 @@ class Command(BaseCommand):
                 )
                 with urllib.request.urlopen(req, timeout=10) as response:
                     xml_data = response.read()
-                
+
                 deals = feed['parser'](xml_data)
-                
+
                 # 写入数据库 (去重校验：相同创企相同轮次在 24 小时内不重复写入)
                 feed_imported = 0
                 for deal in deals:
@@ -47,7 +49,7 @@ class Command(BaseCommand):
                         company=deal['company'],
                         round=deal['round']
                     ).exists()
-                    
+
                     if not exists:
                         FundingDeal.objects.create(
                             company=deal['company'],
@@ -58,7 +60,7 @@ class Command(BaseCommand):
                         )
                         feed_imported += 1
                         total_imported += 1
-                
+
                 self.stdout.write(self.style.SUCCESS(f"Successfully imported {feed_imported} new deals from {feed['name']}."))
             except Exception as e:
                 self.stdout.write(self.style.WARNING(f"Failed to sync from {feed['name']}: {str(e)}. Skipping..."))
@@ -143,7 +145,7 @@ class Command(BaseCommand):
             items = root.findall('.//item')
             for item in items:
                 title = item.find('title').text or ''
-                
+
                 # TechCrunch 融资新闻常见标题: "AI startup Cohere raises $500M from Nvidia"
                 if 'raises' not in title.lower():
                     continue
@@ -173,7 +175,7 @@ class Command(BaseCommand):
                 investor = 'Venture Capital'
                 from_idx = title.lower().find('from ')
                 led_idx = title.lower().find('led by ')
-                
+
                 if led_idx != -1:
                     investor = title[led_idx + 7:].strip()
                 elif from_idx != -1:

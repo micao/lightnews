@@ -1,10 +1,12 @@
-import os
 import json
 import urllib.request
+
 from django.core.management.base import BaseCommand
 from django.utils import timezone
+
 from news.models import LiveNews
 from users.models import User
+
 
 class Command(BaseCommand):
     help = 'Fetch latest stock, crypto, and currency prices from Yahoo Finance and publish a LiveNews report'
@@ -28,15 +30,15 @@ class Command(BaseCommand):
                 req = urllib.request.Request(url, headers=headers)
                 with urllib.request.urlopen(req, timeout=10) as response:
                     data = json.loads(response.read().decode())
-                
+
                 meta = data['chart']['result'][0]['meta']
                 price = meta['regularMarketPrice']
                 prev_close = meta['previousClose']
-                
+
                 change = price - prev_close
                 change_pct = (change / prev_close) * 100
                 sign = '+' if change_pct >= 0 else ''
-                
+
                 results.append(
                     f"{info['name']}: {price:,.2f}{info['suffix']} ({sign}{change_pct:.2f}%)"
                 )

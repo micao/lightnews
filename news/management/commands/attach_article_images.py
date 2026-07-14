@@ -1,14 +1,16 @@
 import os
-import urllib.request
 import urllib.parse
-from django.core.management.base import BaseCommand
+import urllib.request
+
 from django.conf import settings
+from django.core.management.base import BaseCommand
+
 from news.models import Article
 
 
 def get_optimized_keywords(title, category_name=""):
     title_lower = title.lower()
-    
+
     # 返回主关键词以及备用单关键词
     if any(w in title_lower for w in ['ai', 'artificial intelligence', '人工智能', '智能', '模型', 'gpt', 'llm', 'deepseek', 'neural', 'hugging face']):
         return "neural,network,ai", "technology"
@@ -24,7 +26,7 @@ def get_optimized_keywords(title, category_name=""):
         return "rocket,space", "technology"
     if any(w in title_lower for w in ['code', 'compiler', 'programming', 'zig', 'rust', 'python', 'php', '代码', '编译器', '程序员', '开发']):
         return "code,programming", "technology"
-    
+
     if "前沿科技" in category_name:
         return "technology", "technology"
     elif "独角兽" in category_name:
@@ -51,7 +53,7 @@ class Command(BaseCommand):
         articles = Article.objects.all()
         if not force:
             articles = articles.filter(thumbnail__isnull=True) | articles.filter(thumbnail='')
-        
+
         total = articles.count()
         if total == 0:
             self.stdout.write(self.style.SUCCESS('All articles already have thumbnails. Use --force to regenerate.'))
@@ -62,12 +64,12 @@ class Command(BaseCommand):
         for idx, art in enumerate(articles):
             category_name = art.category.name if art.category else ""
             keywords, fallback_kw = get_optimized_keywords(art.title, category_name)
-            
+
             filename = f"article_{art.id}.jpg"
             filepath = os.path.join(settings.MEDIA_ROOT, filename)
 
             self.stdout.write(f"[{idx+1}/{total}] Keywords: '{keywords}' for Title: '{art.title[:30]}'")
-            
+
             downloaded = False
             # 尝试主要关键词
             for kw in [keywords, fallback_kw, "technology"]:

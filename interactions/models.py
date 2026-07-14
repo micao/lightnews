@@ -1,5 +1,6 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
+
 
 class Comment(models.Model):
     """统一评论表"""
@@ -7,7 +8,7 @@ class Comment(models.Model):
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
     article = models.ForeignKey('news.Article', on_delete=models.CASCADE, null=True, blank=True)
     live_news = models.ForeignKey('news.LiveNews', on_delete=models.CASCADE, null=True, blank=True)
-    
+
     content = models.TextField()
     is_approved = models.BooleanField(default=True)
     likes_count = models.IntegerField(default=0)

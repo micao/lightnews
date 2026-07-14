@@ -1,14 +1,17 @@
 import json
-from django.test import TestCase, Client
+
+from django.test import Client, TestCase
 from django.urls import reverse
-from news.models import Category, Article
-from users.models import User, UserToken
+
 from interactions.models import Comment, Like
+from news.models import Article, Category
+from users.models import User, UserToken
+
 
 class InteractionsAPITests(TestCase):
     def setUp(self):
         self.client = Client()
-        
+
         # 创建用户及 Token
         self.user = User.objects.create_user(username='commenter', password='password123')
         self.user_token = UserToken.objects.create(user=self.user, token='commenter_token')
@@ -45,7 +48,7 @@ class InteractionsAPITests(TestCase):
     def test_toggle_like_success(self):
         """测试正常点赞切换逻辑"""
         payload = {'target_id': self.article.id, 'target_type': 'article'}
-        
+
         # 1. 首次点赞，点赞数增加，且落库 Like 记录
         response = self.client.post(
             reverse('like_toggle_view'),
@@ -105,7 +108,7 @@ class InteractionsAPITests(TestCase):
         data2 = response2.json()
         self.assertTrue(data2['success'])
         self.assertIn('已送入后台审核', data2['message'])
-        
+
         # 验证数据库中评论是否正确，且状态为未审核
         comment = Comment.objects.get(content='支持国产替代，这篇分析写得太棒了！')
         self.assertFalse(comment.is_approved)

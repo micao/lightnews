@@ -1,17 +1,20 @@
 import re
-from django.http import JsonResponse
+
 from django.db import models
+from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from news.models import Category, Tag, Article, LiveNews
+
+from news.models import Article, Category, LiveNews
 from users.models import User, UserProfile
 from users.views import get_authenticated_user
+
 
 def serialize_article(article, request=None, is_detail=False):
     # 如果是详情页，检测 VIP 锁定状态
     content = article.content
     is_locked = False
-    
+
     if article.is_vip_only:
         # 检测用户登录态
         user = None
@@ -101,7 +104,7 @@ def article_list_view(request):
         is_admin = 'ROLE_ADMIN_USER' in get_user_roles(user)
 
     queryset = Article.objects.select_related('category', 'author', 'author__profile').all()
-    
+
     if q:
         queryset = queryset.filter(title__icontains=q)
 
@@ -150,7 +153,7 @@ def article_detail_view(request, slug):
 def live_news_list_view(request):
     # 获取已审核通过的最新的 10 条快讯
     news_qs = LiveNews.objects.filter(is_approved=True).select_related('author', 'author__profile').order_by('-id')[:10]
-    
+
     # 模拟数据转换，把 models.py 的 impact 利多/利空机制转换成创投快报需要的 tag 类别
     # 允许在 model 字段缺失时安全回退，如果 LiveNews 具有 impact 则进行映射
     serialized = []
@@ -298,7 +301,7 @@ def admin_livenews_list_view(request):
         user = get_authenticated_user(request)
         if not user:
             return JsonResponse({'success': False, 'message': '未登录'}, status=401)
-        
+
         from users.views import get_user_roles
         if 'ROLE_ADMIN_USER' not in get_user_roles(user):
             return JsonResponse({'success': False, 'message': '权限不足'}, status=403)
@@ -335,12 +338,12 @@ def admin_livenews_approve_view(request):
     """审核或驳回快报 (管理员专用)"""
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Method not allowed'}, status=405)
-        
+
     try:
         user = get_authenticated_user(request)
         if not user:
             return JsonResponse({'success': False, 'message': '未登录'}, status=401)
-        
+
         from users.views import get_user_roles
         if 'ROLE_ADMIN_USER' not in get_user_roles(user):
             return JsonResponse({'success': False, 'message': '权限不足'}, status=403)
@@ -371,12 +374,12 @@ def admin_livenews_create_view(request):
     """主编手动直接发布新快报 (管理员专用)"""
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Method not allowed'}, status=405)
-        
+
     try:
         user = get_authenticated_user(request)
         if not user:
             return JsonResponse({'success': False, 'message': '未登录'}, status=401)
-        
+
         from users.views import get_user_roles
         if 'ROLE_ADMIN_USER' not in get_user_roles(user):
             return JsonResponse({'success': False, 'message': '权限不足'}, status=403)
@@ -443,14 +446,15 @@ def admin_article_create_view(request):
             return JsonResponse({'success': False, 'message': '分类不存在'}, status=404)
 
         import uuid
+
         from django.utils.text import slugify
-        
+
         slug_base = slugify(title)
         if not slug_base:
             slug_base = "analysis"
-        
+
         slug = f"{slug_base}-{str(uuid.uuid4())[:8]}"
-        
+
         summary = body.get('summary', '').strip()
         status = body.get('status', Article.Status.DRAFT)
         is_vip_only = body.get('is_vip_only', False)
@@ -589,13 +593,14 @@ def admin_article_upload_image_view(request, article_id):
             return JsonResponse({'success': False, 'message': '未检测到上传的图片文件'}, status=400)
 
         import os
-        from PIL import Image
+
         from django.conf import settings
+        from PIL import Image
 
         # 用 Pillow 打开并调整大小生成缩略图 (限制为最大 800x450, 保持高保真和极快加载速度)
         try:
             img = Image.open(uploaded_file)
-            
+
             # 如果是 RGBA (带透明通道) 转换为 RGB 格式以保存为高质量 JPEG
             if img.mode in ('RGBA', 'LA'):
                 background = Image.new('RGB', img.size, (255, 255, 255))
@@ -603,14 +608,14 @@ def admin_article_upload_image_view(request, article_id):
                 img = background
             elif img.mode != 'RGB':
                 img = img.convert('RGB')
-                
+
             img.thumbnail((800, 450))
-            
+
             # 保存到本地 mediafiles/
             os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
             filename = f"article_{article.id}_thumb.jpg"
             filepath = os.path.join(settings.MEDIA_ROOT, filename)
-            
+
             img.save(filepath, 'JPEG', quality=85)
         except Exception as e:
             return JsonResponse({'success': False, 'message': f'图片解析失败: {str(e)}'}, status=400)

@@ -1,8 +1,11 @@
 import json
-from django.test import TestCase, Client
+
+from django.test import Client, TestCase
 from django.urls import reverse
-from news.models import Category, Article, LiveNews
+
+from news.models import Article, Category
 from users.models import User, UserToken
+
 
 class NewsArticleAPITests(TestCase):
     def setUp(self):
@@ -13,7 +16,7 @@ class NewsArticleAPITests(TestCase):
 
         # 创建研究员/作者
         self.author = User.objects.create_user(username='news_author', password='password123')
-        
+
         # 创建管理员
         self.admin_user = User.objects.create_user(
             username='admin_editor',
@@ -192,7 +195,7 @@ class NewsArticleAPITests(TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertTrue(data['success'])
-        
+
         # 验证关联文章的双向对称绑定效果
         new_article = Article.objects.get(title='2026年中国半导体材料国产替代投资机遇')
         self.assertEqual(new_article.related_articles.count(), 1)

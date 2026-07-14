@@ -1,0 +1,69 @@
+name: Continuous Deployment (CD)
+
+on:
+  release:
+    types: [published] # 触发条件1：当您在 GitHub 界面上发布 Release (发布新版本) 时触发
+  workflow_dispatch:     # 触发条件2：支持在 GitHub Actions 页面上手动点击 "Run workflow" 按钮触发
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v4
+
+    # 1. 登录 Docker Hub (或您所使用的镜像仓库)
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    # 2. 编译前端静态资源并打包前端 Nginx 镜像
+    - name: Build and Push Frontend Image
+      run: |
+        cd frontend
+        npm ci
+        npm run build
+        cd ..
+        # 构建前端专用的 Nginx 容器（包含编译好的 dist）并推送
+        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/lightnews-frontend:latest -f deploy/nginx/Dockerfile .
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/lightnews-frontend:latest
+
+    # 3. 构建后端 Django 镜像并推送
+    - name: Build and Push Backend Image
+      run: |
+        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/lightnews-backend:latest -f deploy/app/Dockerfile .
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/lightnews-backend:latest
+
+  deploy-to-vps:
+    name: SSH Deploy to Production VPS
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+    # 4. 使用 SSH 连接到您的生产服务器，拉取最新配置与镜像并重启容器
+    - name: Execute remote SSH commands
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USER }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        script: |
+          cd /home/micao/PyCharmMiscProject/lightnews # 替换为您服务器上的实际部署目录
+          
+          # 1. 拉取最新的配置文件与 Docker Compose 文件
+          git pull origin main
+          
+          # 2. 登录镜像仓库并拉取最新镜像
+          docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" -p "${{ secrets.DOCKERHUB_TOKEN }}"
+          docker compose -f docker-compose.yaml pull
+          
+          # 3. 平滑更新业务容器（保持数据库容器 db 不重启、不中断）
+          docker compose -f docker-compose.yaml up -d --remove-orphans --no-deps web nginx
+          
+          # 4. 执行 Django 数据库迁移
+          docker compose -f docker-compose.yaml exec -T web python manage.py migrate --noinput
+          
+          # 5. 清理悬空镜像，释放服务器磁盘空间
+          docker image prune -f

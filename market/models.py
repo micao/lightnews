@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class MarketInstrument(models.Model):
     """行情资产标的信息注册表"""
     class ClassType(models.TextChoices):

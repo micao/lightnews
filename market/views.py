@@ -1,5 +1,7 @@
 from django.http import JsonResponse
+
 from market.models import FundingDeal
+
 
 def funding_deals_list_view(request):
     """获取最新投融资项目列表 (MarketTicker 专属接口)"""

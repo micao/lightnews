@@ -1,11 +1,13 @@
+import datetime
 import os
 import re
-import datetime
+
 from django.core.management.base import BaseCommand
 from django.utils.timezone import make_aware
-from django.utils.text import slugify
+
 from news.models import Article, Category
 from users.models import User
+
 
 # 高性能单字符状态机解析 SQL Insert Values 语句
 def parse_mysql_values(sql_content):
@@ -15,13 +17,13 @@ def parse_mysql_values(sql_content):
     in_string = False
     string_char = None
     escaped = False
-    
+
     start_idx = sql_content.find("VALUES (")
     if start_idx == -1:
         start_idx = sql_content.find("values (")
     if start_idx == -1:
         return []
-    
+
     idx = start_idx + 8
     length = len(sql_content)
     while idx < length:
@@ -38,12 +40,12 @@ def parse_mysql_values(sql_content):
             escaped = False
             idx += 1
             continue
-        
+
         if char == '\\':
             escaped = True
             idx += 1
             continue
-        
+
         if in_string:
             if char == string_char:
                 in_string = False
@@ -73,7 +75,7 @@ def parse_mysql_values(sql_content):
                 tuples.append(current_tuple)
                 current_tuple = []
                 current_val = []
-                
+
                 next_comma = sql_content.find(',(', idx)
                 if next_comma == -1:
                     break
@@ -120,7 +122,7 @@ class Command(BaseCommand):
         for stmt in stream_statements(sql_path):
             statement_count += 1
             stmt_strip = stmt.strip()
-            
+
             # 1. 解析 node 表
             if stmt_strip.startswith('INSERT INTO `node`') or stmt_strip.startswith('INSERT INTO node'):
                 rows = parse_mysql_values(stmt_strip)
@@ -140,7 +142,7 @@ class Command(BaseCommand):
                                 'uid': uid,
                                 'created': created
                             }
-                            
+
             # 2. 解析 field_data_body 正文表
             elif stmt_strip.startswith('INSERT INTO `field_data_body`') or stmt_strip.startswith('INSERT INTO field_data_body'):
                 rows = parse_mysql_values(stmt_strip)
@@ -156,7 +158,7 @@ class Command(BaseCommand):
                                 'value': body_value or '',
                                 'summary': body_summary or ''
                             }
-                            
+
             # 3. 解析 taxonomy_term_data 词典表
             elif stmt_strip.startswith('INSERT INTO `taxonomy_term_data`') or stmt_strip.startswith('INSERT INTO taxonomy_term_data'):
                 rows = parse_mysql_values(stmt_strip)
@@ -169,7 +171,7 @@ class Command(BaseCommand):
                             'name': name,
                             'vid': vid
                         }
-                        
+
             # 4. 解析 taxonomy_index 词典关系关联表
             elif stmt_strip.startswith('INSERT INTO `taxonomy_index`') or stmt_strip.startswith('INSERT INTO taxonomy_index'):
                 rows = parse_mysql_values(stmt_strip)
@@ -209,7 +211,7 @@ class Command(BaseCommand):
         def match_category(nid):
             tags = node_tags.get(nid, [])
             tags_str = "".join(tags)
-            
+
             # 1. 创投/融资 -> VC/PE观察
             if any(k in tags_str for k in ['创投', '融资', '投资', '并购', '财', '股市', '基金']):
                 return categories_cache['VC/PE观察']
@@ -224,28 +226,28 @@ class Command(BaseCommand):
         for nid, node in nodes.items():
             if nid not in bodies:
                 continue
-            
+
             title = node['title']
             content = bodies[nid]['value']
             summary = bodies[nid]['summary']
             created_timestamp = node['created']
-            
+
             publish_at = make_aware(datetime.datetime.fromtimestamp(created_timestamp))
             category = match_category(nid)
-            
+
             # 使用唯一 ID 拼接 Slug，支持幂等写入
             slug = f'historical-drupal-article-{nid}'
-            
+
             # 彻底清洗正文：去除所有可能产生的 rnrn/rn 以及真实换行符
             clean_content = content.replace('rnrn', '\n').replace('rn', '\n').replace('\r\n', '\n').replace('\r', '\n')
-            
+
             # 彻底清洗摘要：剥离 HTML 标签、去除换行与首尾空白
             clean_summary = ''
             if summary:
                 clean_summary = re.sub(r'<[^>]+>', '', summary)
                 clean_summary = clean_summary.replace('rnrn', ' ').replace('rn', ' ').replace('\r', ' ').replace('\n', ' ')
                 clean_summary = re.sub(r'\s+', ' ', clean_summary).strip()
-                
+
             if not clean_summary:
                 # 简单剥离正文 HTML 标签获取纯文字
                 text_content = re.sub(r'<[^>]+>', '', clean_content)

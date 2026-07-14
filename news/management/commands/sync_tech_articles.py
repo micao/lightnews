@@ -1,15 +1,18 @@
+import json
 import os
 import re
-import json
-import urllib.request
 import urllib.parse
+import urllib.request
 import xml.etree.ElementTree as ET
+
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from django.conf import settings
 from django.utils.text import slugify
+
 from news.models import Article, Category
 from users.models import User
+
 
 def translate_text(text):
     """0 Token 谷歌翻译 API"""
@@ -25,7 +28,7 @@ def translate_text(text):
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=10) as response:
             res_json = json.loads(response.read().decode())
-        
+
         translated = "".join([part[0] for part in res_json[0] if part[0]])
         return translated.strip()
     except Exception:
@@ -33,7 +36,7 @@ def translate_text(text):
 
 def get_optimized_keywords(title, category_name=""):
     title_lower = title.lower()
-    
+
     # 根据标题内容映射最贴切的无版权 stock photo 关键词
     if any(w in title_lower for w in ['ai', 'artificial intelligence', '人工智能', '智能', '模型', 'gpt', 'llm', 'deepseek', 'neural', 'hugging face']):
         return "neural,network,artificial,intelligence"
@@ -49,7 +52,7 @@ def get_optimized_keywords(title, category_name=""):
         return "rocket,space,satellite"
     if any(w in title_lower for w in ['code', 'compiler', 'programming', 'zig', 'rust', 'python', 'php', '代码', '编译器', '程序员', '开发']):
         return "code,programming,terminal"
-    
+
     # 默认分类兜底
     if "前沿科技" in category_name:
         return "technology,abstract"
@@ -64,7 +67,7 @@ def extract_article_body(url):
         req = urllib.request.Request(url, headers=headers)
         with urllib.request.urlopen(req, timeout=10) as response:
             html = response.read().decode('utf-8', errors='ignore')
-        
+
         # 1. 提取首张大图
         img_url = None
         img_matches = re.findall(r'<img[^>]+src=["\'](https?://[^"\']+\.(?:jpg|jpeg|png))["\']', html)
@@ -88,7 +91,7 @@ def extract_article_body(url):
             # 过滤掉较短的修饰性语句
             if len(txt) > 50 and 'javascript' not in txt.lower():
                 paragraphs.append(txt)
-                
+
         return paragraphs, img_url
     except Exception:
         return [], None
@@ -100,15 +103,15 @@ def download_image(url, slug_str):
     try:
         headers = {'User-Agent': 'Mozilla/5.0'}
         req = urllib.request.Request(url, headers=headers)
-        
+
         safe_slug = re.sub(r'[^a-zA-Z0-9_-]', '', slug_str)
         filename = f"scraped_{safe_slug[:40]}.png"
         filepath = os.path.join(settings.MEDIA_ROOT, filename)
-        
+
         with urllib.request.urlopen(req, timeout=10) as response:
             with open(filepath, 'wb') as f:
                 f.write(response.read())
-                
+
         return f"/media/{filename}"
     except Exception:
         return None
@@ -171,7 +174,7 @@ class Command(BaseCommand):
                 for item in items:
                     title = item.find('title').text or ''
                     link = item.find('link').text or ''
-                    
+
                     if not link:
                         continue
 
@@ -208,7 +211,7 @@ class Command(BaseCommand):
 
                     # 4. 头图配图下载
                     thumbnail_path = download_image(img_url, temp_slug)
-                    
+
                     # 降级备用：如果文章内无图，用 loremflickr 根据标题和分类下载匹配的高清图片
                     if not thumbnail_path:
                         combined_title = f"{title} {translated_title}"

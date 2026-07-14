@@ -1,4 +1,4 @@
-.PHONY: dev destroy dev-frontend dev-frontend-docker makemigrations migrate check shell seed sync-deals sync-financial sync-tech sync-articles test
+.PHONY: dev destroy dev-frontend dev-frontend-docker makemigrations migrate check shell seed sync-deals sync-financial sync-tech sync-articles test lint-backend lint-frontend lint
 
 # 启动后端 Docker 容器环境
 dev:
@@ -55,3 +55,15 @@ sync-articles:
 # 运行后端 Django 单元与功能测试套件
 test:
 	docker compose --env-file .env.dev exec web python manage.py test
+
+# 后端代码质量检测 (Ruff)
+lint-backend:
+	docker compose --env-file .env.dev exec web ruff check .
+
+# 前端代码质量与类型安全检测 (Oxlint & tsc)
+lint-frontend:
+	cd frontend && npm run lint
+	cd frontend && npx tsc --noEmit
+
+# 全栈代码质量统一核查
+lint: lint-backend lint-frontend
