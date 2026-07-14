@@ -63,8 +63,19 @@ jobs:
           
           # 3. 平滑拉起/更新所有服务容器（若 db 已在运行，它会保持运行且不会被中断或重启）
           docker compose --env-file .env.prod -f docker-compose.yaml up -d --remove-orphans
+
+          # 4. 等待数据库完全就绪（防止 Postgres 刚启动时拒绝连接）
+          echo "Waiting for database to accept connections..."
+          for i in {1..15}; do
+            if docker compose --env-file .env.prod -f docker-compose.yaml exec -T db pg_isready >/dev/null 2>&1; then
+              echo "Database is ready!"
+              break
+            fi
+            echo "Database is starting, waiting 1s..."
+            sleep 1
+          done
           
-          # 4. 执行 Django 数据库迁移
+          # 5. 执行 Django 数据库迁移
           docker compose --env-file .env.prod -f docker-compose.yaml exec -T web python manage.py migrate --noinput
           
           # 5. 清理悬空镜像，释放服务器磁盘空间

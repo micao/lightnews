@@ -2,7 +2,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { type User, type UserRole } from '../types';
 
-export const API_BASE = 'http://localhost';
+// 本地开发使用 http://localhost（Nginx 监听口），生产环境或 IP 访问使用相对路径以适配真实域名
+export const API_BASE =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost'
+    : '';
 
 interface AuthContextType {
   user: User | null;
