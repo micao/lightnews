@@ -49,6 +49,7 @@ jobs:
         host: ${{ secrets.VPS_HOST }}
         username: ${{ secrets.VPS_USER }}
         key: ${{ secrets.VPS_SSH_KEY }}
+        passphrase: ${{ secrets.VPS_PASSPHRASE }} # 如果您的私钥设置了密码口令，请在 GitHub 中配置此 Secret；若无，置空或不配置即可
         script: |
           cd /home/micao/PyCharmMiscProject/lightnews # 替换为您服务器上的实际部署目录
           
