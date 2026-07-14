@@ -350,50 +350,54 @@ export const Login: React.FC = () => {
             </Box>
           )}
 
-          <Divider sx={{ my: 3, borderColor: 'rgba(255, 255, 255, 0.05)' }}>
-            <Typography variant="caption" sx={{ color: '#475569' }}>
-              {t('Debug Shortcuts')}
-            </Typography>
-          </Divider>
+          {import.meta.env.DEV && (
+            <>
+              <Divider sx={{ my: 3, borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                <Typography variant="caption" sx={{ color: '#475569' }}>
+                  {t('Debug Shortcuts')}
+                </Typography>
+              </Divider>
 
-          {/* 快捷多角色按钮 */}
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button
-              variant="outlined"
-              fullWidth
-              startIcon={<PersonIcon />}
-              onClick={() => handleShortcutLogin('user')}
-              disabled={loading}
-              sx={{
-                borderColor: 'rgba(255, 255, 255, 0.05)',
-                color: '#94a3b8',
-                '&:hover': {
-                  bgcolor: 'rgba(255, 255, 255, 0.02)',
-                  borderColor: '#94a3b8',
-                },
-              }}
-            >
-              {t('Mock Reader')}
-            </Button>
-            <Button
-              variant="outlined"
-              color="primary"
-              fullWidth
-              startIcon={<AdminPanelSettingsIcon />}
-              onClick={() => handleShortcutLogin('admin')}
-              disabled={loading}
-              sx={{
-                borderColor: 'rgba(0, 102, 255, 0.3)',
-                color: 'primary.main',
-                '&:hover': {
-                  bgcolor: 'rgba(0, 102, 255, 0.05)',
-                  borderColor: 'primary.main',
-                },
-              }}
-            >
-              {t('Mock Admin')}
-            </Button>
-          </Box>
+              {/* 快捷多角色按钮 */}
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  startIcon={<PersonIcon />}
+                  onClick={() => handleShortcutLogin('user')}
+                  disabled={loading}
+                  sx={{
+                    borderColor: 'rgba(255, 255, 255, 0.05)',
+                    color: '#94a3b8',
+                    '&:hover': {
+                      bgcolor: 'rgba(255, 255, 255, 0.02)',
+                      borderColor: '#94a3b8',
+                    },
+                  }}
+                >
+                  {t('Mock Reader')}
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  fullWidth
+                  startIcon={<AdminPanelSettingsIcon />}
+                  onClick={() => handleShortcutLogin('admin')}
+                  disabled={loading}
+                  sx={{
+                    borderColor: 'rgba(0, 102, 255, 0.3)',
+                    color: 'primary.main',
+                    '&:hover': {
+                      bgcolor: 'rgba(0, 102, 255, 0.05)',
+                      borderColor: 'primary.main',
+                    },
+                  }}
+                >
+                  {t('Mock Admin')}
+                </Button>
+              </Box>
+            </>
+          )}
         </CardContent>
       </Card>
     </Box>

@@ -174,3 +174,32 @@ NGINX_IMAGE=your-dockerhub-username/lightnews-frontend:latest
 3.  **触发发布**:
     *   **常规发布**: 访问 GitHub 仓库的 **Releases** 栏目 -> 点击 **"Draft a new release"** -> 创建并发布类似 `v1.0.0` 的 Tag 标签 -> 点击 **Publish release**，CD 流程将全自动运行部署到 `lightinthebrain.com`。
     *   **手动一键部署**: 在仓库 **Actions** 标签页选中 **Continuous Deployment (CD)** 工作流，点击 **"Run workflow"** 运行。
+
+---
+
+## 🔒 Let's Encrypt SSL/HTTPS 证书配置 (Let's Encrypt SSL/HTTPS Setup)
+
+项目集成了容器化 Let's Encrypt (Certbot) 服务，支持全自动证书申请和周期性续期。
+
+### 1. 前置准备
+1. 确保您的域名 `lightinthebrain.com` 和 `www.lightinthebrain.com` 的 DNS 解析已正确指向 VPS 服务器的公网 IP。
+2. 确保您的服务器防火墙与服务提供商的安全组已对外放行了 **80 (HTTP)** 和 **443 (HTTPS)** 两个端口。
+
+### 2. 首次手动一键引导（Bootstrap）
+因为 Nginx 容器的 HTTPS 配置文件（`prod.conf`）必须加载有效的证书文件才能成功启动，而 Certbot 在获取证书时又需要 Nginx 协助完成 80 端口下的域名质询验证。为解决此“循环依赖”问题，我们提供了一键配置脚本。
+
+首次部署项目或需要重新生成证书时，请 SSH 登录您的 VPS 服务器，进入项目部署目录并执行：
+```bash
+cd /opt/lightnews
+sudo ./init-letsencrypt.sh
+```
+
+**该脚本将全自动处理以下引导过程**：
+1.  在本地建立 `./certbot` 证书卷目录，并利用 `openssl` 临时产生一个对应域名的自签名占位证书，确保 Nginx 容器能成功拉起。
+2.  临时拉起 Nginx 网关容器（通过 80 端口承载外部质询请求）。
+3.  自动删除占位证书，并调用 `certbot` 容器正式向 Let's Encrypt 申请官方颁发的 SSL 证书。
+4.  自动将获取到的真实证书写入挂载目录，并向 Nginx 发送平滑重载（`reload`）信号，完成整套部署。
+
+### 3. 全自动检测与续约（100% 免人工维护）
+*   **自动续期**：`certbot` 容器在后台驻留运行，每 12 小时自动运行 `certbot renew` 检查证书到期情况（证书有效期 90 天，通常在剩余 30 天以内时触发真实续签）。
+*   **配置热重载**：`nginx` 容器内置了重载循环守护进程，每 6 小时自动执行 `nginx -s reload`。这可以在不中断任何用户连接的前提下，无缝热加载并应用最新续签的证书，确保系统长效、平稳运行。

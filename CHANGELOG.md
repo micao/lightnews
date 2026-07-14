@@ -23,6 +23,10 @@
     *   配置了持续部署流水线 [.github/workflows/deploy.yml](file:///home/micao/PyCharmMiscProject/lightnews/.github/workflows/deploy.yml)，支持在 GitHub 上发布 Release 或手动触发部署。构建前后端 Docker 镜像并推送至 Docker Hub，随后 SSH 热更新目标服务器。
 *   **零停机数据库热部署**:
     *   在 CD 重启脚本中引入了 `--no-deps web nginx` 策略，升级部署时只重建应用和网关容器，而让数据库 `db` 容器保持 100% 在线，实现服务更新不中断。
+*   **SSL/HTTPS 容器化自动化配置**:
+    *   在 [docker-compose.yaml](file:///home/micao/PyCharmMiscProject/lightnews/docker-compose.yaml) 中集成了官方 `certbot` 伴随服务，并通过 Nginx 容器内置的定时热重载命令（每 6 小时自动重载配置）保证了已续约证书能无感生效。
+    *   升级了 Nginx 生产环境配置 [prod.conf](file:///home/micao/PyCharmMiscProject/lightnews/deploy/nginx/prod.conf)，实现了强制 301 从 HTTP 重定向至 HTTPS 端口（443），并应用了标准的现代 TLS 安全密码套件。
+    *   编写了 [init-letsencrypt.sh](file:///home/micao/PyCharmMiscProject/lightnews/init-letsencrypt.sh) 引导脚本，一键自动化了从“生成临时自签名证书让 Nginx 顺利起动”到“自动向 Let's Encrypt 申请替换真实正式证书”的闭环步骤。
 
 ### 🔧 改进与优化 (Changed)
 *   **数据库本地持久化**:
@@ -49,3 +53,6 @@
 *   **域名硬编码与跨域报错修复**:
     *   将 [AuthContext.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/context/AuthContext.tsx) 中的 `API_BASE` 改为自适应判断。本地开发时使用 `http://localhost`，在线上生产环境则使用相对路径 `""`，适配了域名和 IP 访问。
     *   升级了 [middleware.py](file:///home/micao/PyCharmMiscProject/lightnews/lightnews/middleware.py) 的 `SimpleCORSMiddleware`。添加了在 `settings.DEBUG = False` 时的线上域名白名单映射（如 `lightinthebrain.com`），消除了线上跨域拦截错误。
+*   **模拟登录与快捷调试通道隐藏**:
+    *   在前端 [Login.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/pages/Login.tsx) 中使用 `import.meta.env.DEV` 包裹快捷调试入口，生产环境构建时该模块会被完全剔除（Tree-shaking）。
+    *   在后端 [views.py](file:///home/micao/PyCharmMiscProject/lightnews/users/views.py) 的登录接口中，增加 `settings.DEBUG` 条件判定，强制生产环境屏蔽任何免密码快捷调试登录（如 `guest_user` 或 `admin_editor`），提升了系统线上安全性。
