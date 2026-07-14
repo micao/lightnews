@@ -1,6 +1,7 @@
 import json
 import uuid
 
+from django.conf import settings
 from django.contrib.auth import authenticate
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -106,9 +107,9 @@ def login_view(request):
         password = data.get('password', '').strip()
         role_type = data.get('roleType', 'user') # 'admin' 或 'user'
 
-        # 开发及快捷调试便捷机制：仅允许默认模拟用户进行无密码快捷登陆，其余用户强制使用密码验证
+        # 开发及快捷调试便捷机制：仅允许在 DEBUG 模式下通过默认模拟用户进行无密码快捷登陆，其余情况强制使用密码验证
         user = None
-        if not password and username in ['', 'guest_user', 'admin_editor']:
+        if settings.DEBUG and not password and username in ['', 'guest_user', 'admin_editor']:
             # 如果没有输入密码，且为默认的模拟用户名，则进入快捷调试通道
             if role_type == 'admin' or username == 'admin_editor':
                 username = 'admin_editor'

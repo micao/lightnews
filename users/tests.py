@@ -1,6 +1,6 @@
 import json
 
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from users.models import User, UserProfile, UserToken
@@ -133,6 +133,7 @@ class UsersAuthTests(TestCase):
         self.assertFalse(data['success'])
         self.assertIn('密码不能为空', data['message'])
 
+    @override_settings(DEBUG=True)
     def test_login_shortcut_guest_success(self):
         """测试默认 guest_user 免密快捷通道是否正常畅通"""
         payload = {
