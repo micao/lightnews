@@ -3,6 +3,7 @@ import json
 from django.test import Client, TestCase
 from django.urls import reverse
 
+from antispam.models import Captcha
 from interactions.models import Comment, Like
 from news.models import Article, Category
 from users.models import User, UserToken
@@ -81,6 +82,8 @@ class InteractionsAPITests(TestCase):
 
     def test_comment_lifecycle(self):
         """测试评论发布、拉取和管理员审核流"""
+        self.article.allow_comments = True
+        self.article.save()
         # 1. 未登录发布评论 -> 401
         payload = {
             'article_slug': self.article.slug,
@@ -93,10 +96,27 @@ class InteractionsAPITests(TestCase):
         )
         self.assertEqual(response.status_code, 401)
 
-        # 2. 登录发布评论 -> 成功，但默认 is_approved=False
-        payload_ok = {
+        # 2. 登录发布评论 -> 失败（缺少验证码）
+        payload_no_captcha = {
             'article_slug': self.article.slug,
             'content': '支持国产替代，这篇分析写得太棒了！'
+        }
+        response_fail = self.client.post(
+            reverse('comment_dispatch'),
+            data=json.dumps(payload_no_captcha),
+            content_type='application/json',
+            HTTP_AUTHORIZATION='Bearer commenter_token'
+        )
+        self.assertEqual(response_fail.status_code, 400)
+        self.assertIn('验证码', response_fail.json()['message'])
+
+        # 2b. 登录且输入正确验证码发布评论 -> 成功，但默认 is_approved=False
+        captcha = Captcha.objects.create(answer='12')
+        payload_ok = {
+            'article_slug': self.article.slug,
+            'content': '支持国产替代，这篇分析写得太棒了！',
+            'captcha_id': str(captcha.id),
+            'captcha_answer': '12'
         }
         response2 = self.client.post(
             reverse('comment_dispatch'),
@@ -158,3 +178,23 @@ class InteractionsAPITests(TestCase):
         data_list2 = response_list2.json()
         self.assertEqual(len(data_list2['comments']), 1)
         self.assertEqual(data_list2['comments'][0]['content'], '支持国产替代，这篇分析写得太棒了！')
+
+    def test_comment_disabled_by_default(self):
+        """测试默认情况下文章关闭评论，发布评论应被拦截返回 403"""
+        self.assertFalse(self.article.allow_comments) # 默认关闭
+
+        captcha = Captcha.objects.create(answer='12')
+        payload = {
+            'article_slug': self.article.slug,
+            'content': '这是一条在评论关闭状态下提交的测试评论',
+            'captcha_id': str(captcha.id),
+            'captcha_answer': '12'
+        }
+        response = self.client.post(
+            reverse('comment_dispatch'),
+            data=json.dumps(payload),
+            content_type='application/json',
+            HTTP_AUTHORIZATION='Bearer commenter_token'
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertIn('已关闭评论', response.json()['message'])

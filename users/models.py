@@ -1,3 +1,4 @@
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -19,10 +20,12 @@ class UserProfile(models.Model):
     bio = models.TextField(blank=True, null=True)
     is_analyst = models.BooleanField(default=False) # 是否是认证分析师/专栏作者
     analyst_credentials = models.CharField(max_length=255, blank=True, null=True) # 职业资格证号
+    analyst_status = models.CharField(_("审核状态"), max_length=20, default='none') # none, pending, approved, rejected
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'user_profiles'
+
 
 class Membership(models.Model):
     """用户 VIP 会员等级与订阅记录"""

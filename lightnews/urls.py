@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import path
 from django.views.decorators.csrf import csrf_exempt
 
+from antispam.views import captcha_view
 from interactions.views import (
     admin_comment_approve_view,
     admin_comments_view,
@@ -23,7 +24,14 @@ from news.views import (
     live_news_list_view,
     seed_data_view,
 )
-from users.views import login_view, profile_view, register_view
+from users.views import (
+    admin_approve_writer_view,
+    admin_pending_writers_view,
+    apply_writer_view,
+    login_view,
+    profile_view,
+    register_view,
+)
 
 
 @csrf_exempt
@@ -39,6 +47,10 @@ urlpatterns = [
     path('api/auth/register/', register_view, name='register_view'),
     path('api/auth/login/', login_view, name='login_view'),
     path('api/auth/profile/', profile_view, name='profile_view'),
+    path('api/auth/apply-writer/', apply_writer_view, name='apply_writer_view'),
+
+    # 防垃圾验证
+    path('api/antispam/captcha/', captcha_view, name='captcha_view'),
 
     # 新闻与快讯
     path('api/articles/', article_list_view, name='article_list_view'),
@@ -54,6 +66,8 @@ urlpatterns = [
     path('api/interactions/like/', like_toggle_view, name='like_toggle_view'),
 
     # 管理员后台
+    path('api/admin/users/pending/', admin_pending_writers_view, name='admin_pending_writers_view'),
+    path('api/admin/users/approve/', admin_approve_writer_view, name='admin_approve_writer_view'),
     path('api/admin/comments/', admin_comments_view, name='admin_comments_view'),
     path('api/admin/comments/approve/', admin_comment_approve_view, name='admin_comment_approve_view'),
     path('api/admin/livenews/', admin_livenews_list_view, name='admin_livenews_list_view'),

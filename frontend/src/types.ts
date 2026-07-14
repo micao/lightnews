@@ -10,6 +10,7 @@ export interface User {
   avatar_url?: string;
   bio?: string;
   is_analyst?: boolean;
+  analyst_status?: 'none' | 'pending' | 'approved' | 'rejected';
 }
 
 export interface Article {
@@ -37,6 +38,7 @@ export interface Article {
   status?: string;
   thumbnail?: string;
   source_url?: string;
+  allow_comments?: boolean;
   related_articles?: Article[];
 }
 

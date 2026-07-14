@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, API_BASE } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import {
   Box,
@@ -15,6 +15,7 @@ import {
   List,
   ListItem,
   ListItemText,
+  TextField,
 } from '@mui/material';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -22,9 +23,45 @@ import StarIcon from '@mui/icons-material/Star';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 
 export const Profile: React.FC = () => {
-  const { user, logout, hasRole } = useAuth();
+  const { user, logout, hasRole, refreshProfile } = useAuth();
   const { t } = useI18n();
   const navigate = useNavigate();
+
+  const [credentials, setCredentials] = useState('');
+  const [applying, setApplying] = useState(false);
+  const [applyMessage, setApplyMessage] = useState('');
+  const [applySuccess, setApplySuccess] = useState<boolean | null>(null);
+
+  const handleApplyWriter = async () => {
+    setApplying(true);
+    setApplyMessage('');
+    try {
+      const token = localStorage.getItem('lightnews_token');
+      const res = await fetch(`${API_BASE}/api/auth/apply-writer/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ credentials })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setApplySuccess(true);
+        setApplyMessage('申请提交成功，请等待系统管理员审核。');
+        await refreshProfile();
+      } else {
+        setApplySuccess(false);
+        setApplyMessage(data.message || '提交失败');
+      }
+    } catch (err) {
+      console.error(err);
+      setApplySuccess(false);
+      setApplyMessage('网络连接错误，请稍后重试');
+    } finally {
+      setApplying(false);
+    }
+  };
 
   if (!user) {
     return (
@@ -85,9 +122,18 @@ export const Profile: React.FC = () => {
                     sx={{ bgcolor: 'primary.main', color: '#fff', fontWeight: 700 }}
                   />
                 )}
-                {user.roles.includes('ROLE_USER') && !hasRole('ROLE_ADMIN_USER') && (
-                  <Chip label={t('Special Guest Reader')} color="secondary" sx={{ color: '#000', fontWeight: 600 }} />
-                )}
+                {user.roles.includes('ROLE_USER') && !hasRole('ROLE_ADMIN_USER') && !user.is_analyst && (
+                   <Chip label={t('Special Guest Reader')} color="secondary" sx={{ color: '#000', fontWeight: 600 }} />
+                 )}
+                 {user.is_analyst && (
+                   <Chip label={t('Certified Writer/Analyst')} color="success" sx={{ color: '#fff', fontWeight: 700 }} />
+                 )}
+                 {user.analyst_status === 'pending' && (
+                   <Chip label={t('Writer Audit Pending')} color="warning" sx={{ color: '#fff', fontWeight: 600 }} />
+                 )}
+                 {user.analyst_status === 'rejected' && (
+                   <Chip label={t('Application Rejected')} color="error" sx={{ color: '#fff', fontWeight: 600 }} />
+                 )}
               </Box>
 
               <Typography variant="body2" sx={{ color: '#94a3b8' }}>
@@ -143,6 +189,67 @@ export const Profile: React.FC = () => {
           </Button>
         </Box>
       </Paper>
+
+      {/* 专栏作者/写作者入驻申请 */}
+      {!user.is_analyst && (
+        <Paper sx={{ p: 3, bgcolor: '#101726', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 4, mb: 4 }}>
+          <Typography variant="h6" sx={{ color: '#f8fafc', fontWeight: 700, mb: 1 }}>
+            {t('Apply to Become a Writer/Analyst')}
+          </Typography>
+          
+          {user.analyst_status === 'pending' ? (
+            <Box sx={{ p: 2, bgcolor: 'rgba(234, 179, 8, 0.05)', border: '1px dashed rgba(234, 179, 8, 0.3)', borderRadius: 2 }}>
+              <Typography variant="body2" sx={{ color: 'warning.main', fontWeight: 600 }}>
+                ⏳ 您的专栏作者申请正在审核中，请耐心等待总管理员批准。
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+                申请认证为专栏分析师后，您将拥有发布行业分析文章与滚动快讯的权限。管理员审核通过后即可激活作者功能。
+              </Typography>
+              
+              {user.analyst_status === 'rejected' && (
+                <Typography variant="body2" sx={{ color: 'error.main', fontWeight: 600 }}>
+                  ❌ 您此前的申请已被管理员驳回。您可以修改申请说明后重新提交。
+                </Typography>
+              )}
+              
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                <TextField
+                  label="职业资质或申请说明 (Credentials / Note)"
+                  variant="outlined"
+                  fullWidth
+                  value={credentials}
+                  onChange={(e) => setCredentials(e.target.value)}
+                  placeholder="例如：某基金硬科技投资经理 / 执业证号：Axxxx"
+                  sx={{
+                    '& .MuiInputLabel-root': { color: '#64748b' },
+                    '& .MuiOutlinedInput-root': {
+                      bgcolor: 'rgba(255, 255, 255, 0.01)',
+                      '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.05)' },
+                    },
+                  }}
+                />
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  onClick={handleApplyWriter}
+                  disabled={applying}
+                  sx={{ color: '#000', fontWeight: 700, px: 4, height: 56 }}
+                >
+                  {applying ? '提交中...' : '提交申请'}
+                </Button>
+              </Box>
+              {applyMessage && (
+                <Typography variant="caption" sx={{ color: applySuccess ? 'success.main' : 'error.main', mt: 1 }}>
+                  {applyMessage}
+                </Typography>
+              )}
+            </Box>
+          )}
+        </Paper>
+      )}
 
       <Grid container spacing={3}>
         {/* 左半部分自选股监控 */}

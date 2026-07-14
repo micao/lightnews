@@ -70,6 +70,7 @@ def serialize_article(article, request=None, is_detail=False):
         'views_count': article.views_count,
         'likes_count': article.likes_count,
         'comments_count': article.comments_count,
+        'allow_comments': article.allow_comments,
         'publish_at': article.publish_at.strftime('%Y-%m-%d %H:%M:%S') if article.publish_at else '',
         'category': {
             'id': article.category.id,
@@ -101,7 +102,8 @@ def article_list_view(request):
     is_admin = False
     if user:
         from users.views import get_user_roles
-        is_admin = 'ROLE_ADMIN_USER' in get_user_roles(user)
+        is_writer = getattr(user, 'profile', None) and user.profile.is_analyst
+        is_admin = 'ROLE_ADMIN_USER' in get_user_roles(user) or is_writer
 
     queryset = Article.objects.select_related('category', 'author', 'author__profile').all()
 
@@ -381,8 +383,10 @@ def admin_livenews_create_view(request):
             return JsonResponse({'success': False, 'message': '未登录'}, status=401)
 
         from users.views import get_user_roles
-        if 'ROLE_ADMIN_USER' not in get_user_roles(user):
-            return JsonResponse({'success': False, 'message': '权限不足'}, status=403)
+        is_admin = 'ROLE_ADMIN_USER' in get_user_roles(user)
+        is_writer = getattr(user, 'profile', None) and user.profile.is_analyst
+        if not is_admin and not is_writer:
+            return JsonResponse({'success': False, 'message': '权限不足，仅管理员或认证作者可操作'}, status=403)
 
         import json
         body = json.loads(request.body)
@@ -428,8 +432,10 @@ def admin_article_create_view(request):
             return JsonResponse({'success': False, 'message': '未登录'}, status=401)
 
         from users.views import get_user_roles
-        if 'ROLE_ADMIN_USER' not in get_user_roles(user):
-            return JsonResponse({'success': False, 'message': '权限不足'}, status=403)
+        is_admin = 'ROLE_ADMIN_USER' in get_user_roles(user)
+        is_writer = getattr(user, 'profile', None) and user.profile.is_analyst
+        if not is_admin and not is_writer:
+            return JsonResponse({'success': False, 'message': '权限不足，仅管理员或认证作者可操作'}, status=403)
 
         import json
         body = json.loads(request.body)
@@ -459,6 +465,7 @@ def admin_article_create_view(request):
         status = body.get('status', Article.Status.DRAFT)
         is_vip_only = body.get('is_vip_only', False)
         source_url = body.get('source_url', '').strip()
+        allow_comments = body.get('allow_comments', False)
 
         publish_at = None
         if status == Article.Status.PUBLISHED:
@@ -474,7 +481,8 @@ def admin_article_create_view(request):
             status=status,
             is_vip_only=is_vip_only,
             source_url=source_url if source_url else None,
-            publish_at=publish_at
+            publish_at=publish_at,
+            allow_comments=allow_comments
         )
 
         if 'related_article_ids' in body:
@@ -501,8 +509,10 @@ def admin_article_update_view(request, article_id):
             return JsonResponse({'success': False, 'message': '未登录'}, status=401)
 
         from users.views import get_user_roles
-        if 'ROLE_ADMIN_USER' not in get_user_roles(user):
-            return JsonResponse({'success': False, 'message': '权限不足'}, status=403)
+        is_admin = 'ROLE_ADMIN_USER' in get_user_roles(user)
+        is_writer = getattr(user, 'profile', None) and user.profile.is_analyst
+        if not is_admin and not is_writer:
+            return JsonResponse({'success': False, 'message': '权限不足，仅管理员或认证作者可操作'}, status=403)
 
         import json
         body = json.loads(request.body)
@@ -526,6 +536,8 @@ def admin_article_update_view(request, article_id):
             article.is_vip_only = body['is_vip_only']
         if 'source_url' in body:
             article.source_url = body['source_url']
+        if 'allow_comments' in body:
+            article.allow_comments = body['allow_comments']
         if 'category_id' in body:
             cat = Category.objects.filter(id=body['category_id']).first()
             if cat:
@@ -557,8 +569,10 @@ def admin_article_delete_view(request, article_id):
             return JsonResponse({'success': False, 'message': '未登录'}, status=401)
 
         from users.views import get_user_roles
-        if 'ROLE_ADMIN_USER' not in get_user_roles(user):
-            return JsonResponse({'success': False, 'message': '权限不足'}, status=403)
+        is_admin = 'ROLE_ADMIN_USER' in get_user_roles(user)
+        is_writer = getattr(user, 'profile', None) and user.profile.is_analyst
+        if not is_admin and not is_writer:
+            return JsonResponse({'success': False, 'message': '权限不足，仅管理员或认证作者可操作'}, status=403)
 
         article = Article.objects.filter(id=article_id).first()
         if not article:
@@ -581,8 +595,10 @@ def admin_article_upload_image_view(request, article_id):
             return JsonResponse({'success': False, 'message': '未登录'}, status=401)
 
         from users.views import get_user_roles
-        if 'ROLE_ADMIN_USER' not in get_user_roles(user):
-            return JsonResponse({'success': False, 'message': '权限不足'}, status=403)
+        is_admin = 'ROLE_ADMIN_USER' in get_user_roles(user)
+        is_writer = getattr(user, 'profile', None) and user.profile.is_analyst
+        if not is_admin and not is_writer:
+            return JsonResponse({'success': False, 'message': '权限不足，仅管理员或认证作者可操作'}, status=403)
 
         article = Article.objects.filter(id=article_id).first()
         if not article:

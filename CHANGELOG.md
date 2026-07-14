@@ -13,6 +13,16 @@
     *   在前端注册页面 [Login.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/pages/Login.tsx) 中新增了研究员自助注册表单与输入验证（用户名 $\ge 3$ 位，密码 $\ge 6$ 位，支持手机号正则校验）。
     *   在 [AuthContext.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/context/AuthContext.tsx) 中集成了注册服务 API 提交。
     *   重构了后端的 [users/views.py](file:///home/micao/PyCharmMiscProject/lightnews/users/views.py)，对非 Mock 默认账户强制执行严格的密码哈希匹配验证，堵塞了原先登录时的免密空密码漏洞。
+*   **文章评论开关及默认闭合机制**:
+    *   **数据库修改**：在 [news/models.py](file:///home/micao/PyCharmMiscProject/lightnews/news/models.py) 的 `Article` 模型中新增了 `allow_comments` 属性（默认值为 `False`，即默认关闭评论）。
+    *   **接口校验**：更新了 `news/views.py` 的序列化、新建与更新接口以接受 `allow_comments` 字段；在评论提交入口 [interactions/views.py](file:///home/micao/PyCharmMiscProject/lightnews/interactions/views.py) 对文章评论权限进行硬拦截，关闭时返回 `403`。
+    *   **后台开关**：在管理员面板 [AdminDashboard.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/pages/AdminDashboard.tsx) 的新建文章与编辑文章弹窗中集成了 “开启评论” 的 Switch 开关。
+    *   **前台状态渲染**：在文章详情 [ArticleDetail.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/pages/ArticleDetail.tsx) 中对关闭评论的文章隐藏输入框，并展示“该文章已关闭评论功能”锁定状态。
+*   **公共安全验证码 (antispam) 与写作者审核流**:
+    *   **架构解耦**：将验证码逻辑剥离并建立全新的独立子应用 [antispam](file:///home/micao/PyCharmMiscProject/lightnews/antispam/apps.py)，实现统一模型 `Captcha` 和工具函数 `verify_and_burn_captcha`。
+    *   **防刷场景覆盖**：用户注册流程与评论发布功能 [interactions/views.py](file:///home/micao/PyCharmMiscProject/lightnews/interactions/views.py) 同时接入了该机制，有效防范批量机器人刷账号和灌水垃圾评论。
+    *   **写作者入驻治理**：支持普通用户在个人资料页面 [Profile.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/pages/Profile.tsx) 申请专栏作者，且管理员可在后台 [AdminDashboard.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/pages/AdminDashboard.tsx) 审核（批准/驳回）；认证写作者（`is_analyst=True`）可直接在 [news/views.py](file:///home/micao/PyCharmMiscProject/lightnews/news/views.py) 获得文章和快讯的发表权。
+    *   **前端图形化接入**：在注册表单 [Login.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/pages/Login.tsx) 以及文章详情评论区 [ArticleDetail.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/pages/ArticleDetail.tsx) 均嵌入了口算验证码组件，支持错答刷新和即用即焚。
 *   **关联文章双向自引用推荐**:
     *   在 [news/models.py](file:///home/micao/PyCharmMiscProject/lightnews/news/models.py) 的 `Article` 模型中新增了对称自关联 Many-to-Many 字段 `related_articles`。
     *   为管理员后台新增了创建和更新文章时保存关联引用关系的 API 端点。

@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'news.apps.NewsConfig',
     'market.apps.MarketConfig',
     'interactions.apps.InteractionsConfig',
+    'antispam.apps.AntispamConfig',
 ]
 
 # 自定义用户模型
