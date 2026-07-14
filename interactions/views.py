@@ -4,6 +4,7 @@ from django.db import models
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
+from antispam.utils import verify_and_burn_captcha
 from interactions.models import Comment, Like
 from news.models import Article
 from users.views import get_authenticated_user, get_user_roles
@@ -71,6 +72,15 @@ def comment_create_view(request):
         article_slug = data.get('article_slug', '').strip()
         content = data.get('content', '').strip()
         parent_id = data.get('parent_id')
+        captcha_id = data.get('captcha_id', '').strip()
+        captcha_answer = data.get('captcha_answer', '').strip()
+
+        if not captcha_id or not captcha_answer:
+            return JsonResponse({'success': False, 'message': '验证码不能为空'}, status=400)
+
+        is_captcha_valid, captcha_msg = verify_and_burn_captcha(captcha_id, captcha_answer)
+        if not is_captcha_valid:
+            return JsonResponse({'success': False, 'message': captcha_msg}, status=400)
 
         if not article_slug or not content:
             return JsonResponse({'success': False, 'message': '文章标识和评论内容不能为空'}, status=400)
@@ -79,6 +89,9 @@ def comment_create_view(request):
             article = Article.objects.get(slug=article_slug)
         except Article.DoesNotExist:
             return JsonResponse({'success': False, 'message': '文章不存在'}, status=404)
+
+        if not article.allow_comments:
+            return JsonResponse({'success': False, 'message': '该文章已关闭评论功能'}, status=403)
 
         parent_cmt = None
         if parent_id:

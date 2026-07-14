@@ -6,6 +6,7 @@ from django.contrib.auth import authenticate
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
+from antispam.utils import verify_and_burn_captcha
 from users.models import User, UserProfile, UserToken
 
 
@@ -44,6 +45,7 @@ def serialize_user(user):
         'avatar_url': profile.avatar_url or '',
         'bio': profile.bio or '',
         'is_analyst': profile.is_analyst,
+        'analyst_status': profile.analyst_status,
         'roles': get_user_roles(user)
     }
 
@@ -58,9 +60,19 @@ def register_view(request):
         password = data.get('password', '').strip()
         phone_number = data.get('phone_number', '').strip()
         nickname = data.get('nickname', '').strip()
+        captcha_id = data.get('captcha_id', '').strip()
+        captcha_answer = data.get('captcha_answer', '').strip()
 
         if not username or not password:
             return JsonResponse({'success': False, 'message': '用户名和密码不能为空'}, status=400)
+
+        if not captcha_id or not captcha_answer:
+            return JsonResponse({'success': False, 'message': '验证码不能为空'}, status=400)
+
+        # 校验验证码
+        is_captcha_valid, captcha_msg = verify_and_burn_captcha(captcha_id, captcha_answer)
+        if not is_captcha_valid:
+            return JsonResponse({'success': False, 'message': captcha_msg}, status=400)
 
         if User.objects.filter(username=username).exists():
             return JsonResponse({'success': False, 'message': '用户名已存在'}, status=400)
@@ -207,3 +219,106 @@ def profile_view(request):
             return JsonResponse({'success': False, 'message': f'更新个人信息失败: {str(e)}'}, status=500)
 
     return JsonResponse({'success': False, 'message': '不支持的请求方法'}, status=405)
+
+
+
+
+@csrf_exempt
+def apply_writer_view(request):
+    """普通注册用户申请成为专栏作者/写作者"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': '仅支持 POST 请求'}, status=405)
+
+    user = get_authenticated_user(request)
+    if not user:
+        return JsonResponse({'success': False, 'message': '未登录或 Token 无效'}, status=401)
+
+    try:
+        data = json.loads(request.body)
+        credentials = data.get('credentials', '').strip()
+    except Exception:
+        credentials = ''
+
+    profile = user.profile
+    if profile.is_analyst or profile.analyst_status == 'approved':
+        return JsonResponse({'success': False, 'message': '您已经是认证分析师/写作者，无需再次申请'}, status=400)
+
+    profile.analyst_status = 'pending'
+    if credentials:
+        profile.analyst_credentials = credentials
+    profile.save()
+
+    return JsonResponse({
+        'success': True,
+        'message': '申请提交成功，请等待系统管理员审核',
+        'user': serialize_user(user)
+    })
+
+
+@csrf_exempt
+def admin_pending_writers_view(request):
+    """总管理员查看所有待审核的专栏作者申请"""
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'message': '仅支持 GET 请求'}, status=405)
+
+    user = get_authenticated_user(request)
+    if not user or 'ROLE_ADMIN_USER' not in get_user_roles(user):
+        return JsonResponse({'success': False, 'message': '无管理员权限'}, status=403)
+
+    profiles = UserProfile.objects.filter(analyst_status='pending').select_related('user')
+    pending_list = []
+    for p in profiles:
+        pending_list.append({
+            'user_id': p.user.id,
+            'username': p.user.username,
+            'nickname': p.nickname or p.user.username,
+            'credentials': p.analyst_credentials or '',
+            'status': p.analyst_status
+        })
+
+    return JsonResponse({
+        'success': True,
+        'pending_users': pending_list
+    })
+
+
+@csrf_exempt
+def admin_approve_writer_view(request):
+    """总管理员审核审批写作者申请"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': '仅支持 POST 请求'}, status=405)
+
+    user = get_authenticated_user(request)
+    if not user or 'ROLE_ADMIN_USER' not in get_user_roles(user):
+        return JsonResponse({'success': False, 'message': '无管理员权限'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+        target_user_id = data.get('user_id')
+        action = data.get('action', '').strip() # 'approve' 或 'reject'
+
+        if not target_user_id or action not in ['approve', 'reject']:
+            return JsonResponse({'success': False, 'message': '参数无效'}, status=400)
+
+        target_user = User.objects.get(id=target_user_id)
+        profile = target_user.profile
+
+        if action == 'approve':
+            profile.analyst_status = 'approved'
+            profile.is_analyst = True
+            profile.save()
+            message = f"已批准用户 {target_user.username} 的作者申请"
+        else:
+            profile.analyst_status = 'rejected'
+            profile.is_analyst = False
+            profile.save()
+            message = f"已驳回用户 {target_user.username} 的作者申请"
+
+        return JsonResponse({
+            'success': True,
+            'message': message
+        })
+    except User.DoesNotExist:
+        return JsonResponse({'success': False, 'message': '目标用户不存在'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'审核操作失败: {str(e)}'}, status=500)

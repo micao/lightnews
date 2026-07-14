@@ -11,10 +11,18 @@ export const API_BASE =
 interface AuthContextType {
   user: User | null;
   login: (username: string, password?: string, roleType?: 'admin' | 'user') => Promise<boolean>;
-  register: (username: string, password: string, nickname?: string, phoneNumber?: string) => Promise<boolean>;
+  register: (
+    username: string,
+    password: string,
+    nickname?: string,
+    phoneNumber?: string,
+    captchaId?: string,
+    captchaAnswer?: string
+  ) => Promise<boolean>;
   logout: () => void;
   hasRole: (role: UserRole) => boolean;
   loading: boolean;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -78,7 +86,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return false;
   };
 
-  const register = async (username: string, password: string, nickname?: string, phoneNumber?: string): Promise<boolean> => {
+  const register = async (
+    username: string,
+    password: string,
+    nickname?: string,
+    phoneNumber?: string,
+    captchaId?: string,
+    captchaAnswer?: string
+  ): Promise<boolean> => {
     try {
       const res = await fetch(`${API_BASE}/api/auth/register/`, {
         method: 'POST',
@@ -89,7 +104,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           username,
           password,
           nickname,
-          phone_number: phoneNumber
+          phone_number: phoneNumber,
+          captcha_id: captchaId,
+          captcha_answer: captchaAnswer
         })
       });
       
@@ -114,8 +131,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return user?.roles.includes(role) ?? false;
   };
 
+  const refreshProfile = async (): Promise<void> => {
+    const token = localStorage.getItem('lightnews_token');
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/profile/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUser(data.user);
+      }
+    } catch (err) {
+      console.error('refreshProfile error:', err);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, hasRole, loading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, hasRole, loading, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

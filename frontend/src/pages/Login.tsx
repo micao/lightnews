@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, API_BASE } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import {
   Box,
@@ -29,12 +29,37 @@ export const Login: React.FC = () => {
   const [nickname, setNickname] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
 
+  // 验证码状态
+  const [captchaId, setCaptchaId] = useState('');
+  const [captchaQuestion, setCaptchaQuestion] = useState('');
+  const [captchaAnswer, setCaptchaAnswer] = useState('');
+
   // 界面状态
   const [isRegister, setIsRegister] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const from = (location.state as any)?.from?.pathname || '/profile';
+
+  const fetchCaptcha = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/antispam/captcha/`);
+      const data = await res.json();
+      if (data.success) {
+        setCaptchaId(data.captcha_id);
+        setCaptchaQuestion(data.question);
+        setCaptchaAnswer('');
+      }
+    } catch (err) {
+      console.error('Error fetching captcha:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (isRegister) {
+      fetchCaptcha();
+    }
+  }, [isRegister]);
 
   // 处理严格密码登录
   const handleLogin = async (e: React.FormEvent) => {
@@ -102,6 +127,10 @@ export const Login: React.FC = () => {
       setError('用户名和密码不能为空');
       return;
     }
+    if (!captchaAnswer.trim()) {
+      setError('请输入验证码以证明您不是机器人');
+      return;
+    }
     if (trimmedUsername.length < 3) {
       setError('用户名长度不能少于 3 位');
       return;
@@ -125,16 +154,20 @@ export const Login: React.FC = () => {
         trimmedUsername,
         trimmedPassword,
         trimmedNickname || undefined,
-        trimmedPhone || undefined
+        trimmedPhone || undefined,
+        captchaId,
+        captchaAnswer.trim()
       );
       if (success) {
         navigate(from, { replace: true });
       } else {
-        setError('注册失败：用户名已存在，或手机号已被其它账号绑定');
+        setError('注册失败：验证码无效，或用户名/手机号已被占用');
+        fetchCaptcha();
       }
     } catch (err) {
       console.error('Register submit error:', err);
       setError(t('Network Error'));
+      fetchCaptcha();
     } finally {
       setLoading(false);
     }
@@ -321,6 +354,48 @@ export const Login: React.FC = () => {
                   },
                 }}
               />
+
+              {/* 人机校验数学验证码 */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
+                <TextField
+                  label="验证码 (CAPTCHA) *"
+                  variant="outlined"
+                  value={captchaAnswer}
+                  onChange={(e) => setCaptchaAnswer(e.target.value)}
+                  placeholder="计算结果"
+                  sx={{
+                    flex: 1,
+                    '& .MuiInputLabel-root': { color: '#64748b' },
+                    '& .MuiOutlinedInput-root': {
+                      bgcolor: 'rgba(255, 255, 255, 0.01)',
+                      '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.05)' },
+                    },
+                  }}
+                />
+                <Button
+                  variant="outlined"
+                  onClick={fetchCaptcha}
+                  sx={{
+                    height: 56,
+                    minWidth: 120,
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    color: '#94a3b8',
+                    textTransform: 'none',
+                    '&:hover': {
+                      borderColor: 'rgba(255, 255, 255, 0.2)',
+                      bgcolor: 'rgba(255, 255, 255, 0.02)',
+                    }
+                  }}
+                >
+                  {captchaQuestion ? (
+                    <Typography variant="body1" sx={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#38bdf8' }}>
+                      {captchaQuestion}
+                    </Typography>
+                  ) : (
+                    '...'
+                  )}
+                </Button>
+              </Box>
 
               <Button
                 type="submit"

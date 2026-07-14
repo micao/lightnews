@@ -20,7 +20,7 @@ const ZH_TRANSLATIONS: Record<string, string> = {
   'LIGHT IN THE BRAIN Venture Capital Portal': 'LIGHT IN THE BRAIN 科技创投深度资讯门户',
   'All news are sourced from public disclosures, not for investment decisions.': '创投快报均来自一手及公开信披，不作为股权融资投资决策依据。',
   'Verifying credentials...': '正在验证安全权限...',
-  
+
   // Home
   '7x24 Flash News': '7x24 创投快讯',
   'Real-time News': '实时快报',
@@ -30,7 +30,7 @@ const ZH_TRANSLATIONS: Record<string, string> = {
   'Read': '阅读',
   'Deep Research': '首发深度',
   'Exclusive': '独家',
-  
+
   // Article Detail
   'Exclusive Column': '创投独家专栏',
   'Published at': '发布于',
@@ -41,6 +41,7 @@ const ZH_TRANSLATIONS: Record<string, string> = {
   'Login Account': '登录账户',
   'Apply VIP': '申请加入VIP',
   'Comments': '评论互动',
+  'Comments are closed for this article': '该文章已关闭评论功能',
   'Write comment...': '输入您的专业财经见解...',
   'Login to comment': '登录后发表您的见解...',
   'Submit Comment': '发表评论',
@@ -193,15 +194,15 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('light_i18n_lang', lang);
   };
 
-const EN_TRANSLATIONS: Record<string, string> = {
-  '前沿科技': 'Frontier Tech',
-  '独角兽动态': 'Unicorn Dynamics',
-  'VC/PE观察': 'VC/PE Insights',
-  '全部推荐': 'All Recommendations',
-  '系统管理员': 'Administrator',
-  '新注册研究员': 'Research Associate',
-  '快捷调试模拟用户': 'Mock User for Debugging',
-};
+  const EN_TRANSLATIONS: Record<string, string> = {
+    '前沿科技': 'Frontier Tech',
+    '独角兽动态': 'Unicorn Dynamics',
+    'VC/PE观察': 'VC/PE Insights',
+    '全部推荐': 'All Recommendations',
+    '系统管理员': 'Administrator',
+    '新注册研究员': 'Research Associate',
+    '快捷调试模拟用户': 'Mock User for Debugging',
+  };
 
   const t = (key: string): string => {
     if (language === 'zh') {

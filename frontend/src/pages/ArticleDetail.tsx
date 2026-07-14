@@ -38,6 +38,25 @@ export const ArticleDetail: React.FC = () => {
   const [liked, setLiked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
 
+  // 评论验证码状态
+  const [commentCaptchaId, setCommentCaptchaId] = useState('');
+  const [commentCaptchaQuestion, setCommentCaptchaQuestion] = useState('');
+  const [commentCaptchaAnswer, setCommentCaptchaAnswer] = useState('');
+
+  const fetchCommentCaptcha = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/antispam/captcha/`);
+      const data = await res.json();
+      if (data.success) {
+        setCommentCaptchaId(data.captcha_id);
+        setCommentCaptchaQuestion(data.question);
+        setCommentCaptchaAnswer('');
+      }
+    } catch (err) {
+      console.error('Error fetching comment captcha:', err);
+    }
+  };
+
   // 加载文章和评论数据
   const fetchArticleAndComments = async () => {
     try {
@@ -68,6 +87,9 @@ export const ArticleDetail: React.FC = () => {
   useEffect(() => {
     if (slug) {
       fetchArticleAndComments();
+      if (authUser) {
+        fetchCommentCaptcha();
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, authUser]);
@@ -86,6 +108,10 @@ export const ArticleDetail: React.FC = () => {
   const handleSendComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCommentText.trim()) return;
+    if (!commentCaptchaAnswer.trim()) {
+      alert('请输入验证码以证明您不是机器人');
+      return;
+    }
 
     try {
       const token = localStorage.getItem('lightnews_token');
@@ -102,20 +128,26 @@ export const ArticleDetail: React.FC = () => {
         },
         body: JSON.stringify({
           article_slug: slug,
-          content: newCommentText
+          content: newCommentText,
+          captcha_id: commentCaptchaId,
+          captcha_answer: commentCaptchaAnswer.trim()
         })
       });
       const data = await res.json();
       if (data.success) {
         alert(data.message || t('Comment Success'));
         setNewCommentText('');
+        setCommentCaptchaAnswer('');
         // 重新拉取
         fetchArticleAndComments();
+        fetchCommentCaptcha();
       } else {
         alert(data.message || t('Comment Failed'));
+        fetchCommentCaptcha();
       }
     } catch (err) {
       console.error('Comment submit error:', err);
+      fetchCommentCaptcha();
     }
   };
 
@@ -489,29 +521,74 @@ export const ArticleDetail: React.FC = () => {
             </Typography>
 
             {/* 发送评论框 */}
-            <Paper component="form" onSubmit={handleSendComment} sx={{ p: 2, mb: 4, bgcolor: '#101726', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                placeholder={authUser ? t('Write comment...') : t('Login to comment')}
-                disabled={!authUser}
-                value={newCommentText}
-                onChange={(e) => setNewCommentText(e.target.value)}
-                variant="outlined"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(255, 255, 255, 0.02)',
-                    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.05)' },
-                  }
-                }}
-              />
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                <Button type="submit" variant="contained" color="primary" disabled={!authUser || !newCommentText.trim()} sx={{ color: '#fff', px: 3 }}>
-                  {t('Submit Comment')}
-                </Button>
-              </Box>
-            </Paper>
+            {article.allow_comments ? (
+              <Paper component="form" onSubmit={handleSendComment} sx={{ p: 2, mb: 4, bgcolor: '#101726', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  placeholder={authUser ? t('Write comment...') : t('Login to comment')}
+                  disabled={!authUser}
+                  value={newCommentText}
+                  onChange={(e) => setNewCommentText(e.target.value)}
+                  variant="outlined"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      bgcolor: 'rgba(255, 255, 255, 0.02)',
+                      '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.05)' },
+                    }
+                  }}
+                />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, gap: 2 }}>
+                  {authUser && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <TextField
+                        size="small"
+                        placeholder="计算结果"
+                        value={commentCaptchaAnswer}
+                        onChange={(e) => setCommentCaptchaAnswer(e.target.value)}
+                        sx={{
+                          width: 100,
+                          '& .MuiOutlinedInput-root': {
+                            color: '#f8fafc',
+                            bgcolor: 'rgba(255, 255, 255, 0.01)',
+                            '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.05)' },
+                          }
+                        }}
+                      />
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={fetchCommentCaptcha}
+                        sx={{
+                          height: 40,
+                          minWidth: 80,
+                          borderColor: 'rgba(255, 255, 255, 0.1)',
+                          color: '#38bdf8',
+                          fontFamily: 'monospace',
+                          fontWeight: 'bold',
+                          '&:hover': {
+                            borderColor: 'rgba(255, 255, 255, 0.2)',
+                            bgcolor: 'rgba(255, 255, 255, 0.02)',
+                          }
+                        }}
+                      >
+                        {commentCaptchaQuestion || '...'}
+                      </Button>
+                    </Box>
+                  )}
+                  <Button type="submit" variant="contained" color="primary" disabled={!authUser || !newCommentText.trim() || !commentCaptchaAnswer.trim()} sx={{ color: '#fff', px: 3, ml: 'auto' }}>
+                    {t('Submit Comment')}
+                  </Button>
+                </Box>
+              </Paper>
+            ) : (
+              <Paper sx={{ p: 3, mb: 4, bgcolor: '#101726', border: '1px solid rgba(255, 255, 255, 0.05)', textAlign: 'center' }}>
+                <Typography sx={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '0.95rem' }}>
+                  🔒 {t('Comments are closed for this article') || '该文章已关闭评论功能'}
+                </Typography>
+              </Paper>
+            )}
 
             {/* 评论树 */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>

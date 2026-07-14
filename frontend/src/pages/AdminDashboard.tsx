@@ -58,6 +58,7 @@ export const AdminDashboard: React.FC = () => {
   // 评论与快讯审核相关状态
   const [pendingComments, setPendingComments] = useState<any[]>([]);
   const [pendingLiveNews, setPendingLiveNews] = useState<any[]>([]);
+  const [pendingWriters, setPendingWriters] = useState<any[]>([]);
 
   // 主编手动发布快讯表单状态
   const [newFlashContent, setNewFlashContent] = useState('');
@@ -77,6 +78,7 @@ export const AdminDashboard: React.FC = () => {
   const [editContent, setEditContent] = useState('');
   const [editStatus, setEditStatus] = useState('draft');
   const [editIsVip, setEditIsVip] = useState(false);
+  const [editAllowComments, setEditAllowComments] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [editThumbnail, setEditThumbnail] = useState('');
   const [editSourceUrl, setEditSourceUrl] = useState('');
@@ -92,6 +94,7 @@ export const AdminDashboard: React.FC = () => {
   const [createCategoryId, setCreateCategoryId] = useState<number>(1);
   const [createStatus, setCreateStatus] = useState('draft');
   const [createIsVip, setCreateIsVip] = useState(false);
+  const [createAllowComments, setCreateAllowComments] = useState(false);
   const [createSourceUrl, setCreateSourceUrl] = useState('');
   const [createRelatedArticles, setCreateRelatedArticles] = useState<Article[]>([]);
   const [createSaving, setCreateSaving] = useState(false);
@@ -208,6 +211,56 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  // 拉取待审核写作者申请列表
+  const fetchPendingWriters = async () => {
+    try {
+      const token = localStorage.getItem('lightnews_token');
+      if (!token) return;
+
+      const res = await fetch(`${API_BASE}/api/admin/users/pending/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPendingWriters(data.pending_users);
+      }
+    } catch (err) {
+      console.error('Fetch pending writers error:', err);
+    }
+  };
+
+  // 审批写作者入驻申请
+  const handleApproveWriter = async (userId: number, action: 'approve' | 'reject') => {
+    try {
+      const token = localStorage.getItem('lightnews_token');
+      if (!token) return;
+
+      const res = await fetch(`${API_BASE}/api/admin/users/approve/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ user_id: userId, action })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSnackbarMsg(data.message || '操作成功');
+        setSnackbarOpen(true);
+        fetchPendingWriters();
+      } else {
+        setSnackbarMsg(data.message || '操作失败');
+        setSnackbarOpen(true);
+      }
+    } catch (err) {
+      console.error('Approve writer error:', err);
+      setSnackbarMsg('网络错误，请稍后重试');
+      setSnackbarOpen(true);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 0) {
       fetchArticles();
@@ -215,6 +268,8 @@ export const AdminDashboard: React.FC = () => {
       fetchPendingComments();
     } else if (activeTab === 3) {
       fetchPendingLiveNews();
+    } else if (activeTab === 4) {
+      fetchPendingWriters();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, activeTab]);
@@ -271,6 +326,7 @@ export const AdminDashboard: React.FC = () => {
     setEditContent(plainTextContent);
     setEditStatus(article.status || 'published');
     setEditIsVip(article.is_vip_only);
+    setEditAllowComments(!!article.allow_comments);
     setEditThumbnail(article.thumbnail || '');
     setEditSourceUrl(article.source_url || '');
     setEditCategoryId(article.category.id);
@@ -333,6 +389,7 @@ export const AdminDashboard: React.FC = () => {
           content: formattedContent,
           status: editStatus,
           is_vip_only: editIsVip,
+          allow_comments: editAllowComments,
           source_url: editSourceUrl,
           category_id: editCategoryId,
           related_article_ids: editRelatedArticles.map(a => a.id),
@@ -381,6 +438,7 @@ export const AdminDashboard: React.FC = () => {
           content: formattedContent,
           status: createStatus,
           is_vip_only: createIsVip,
+          allow_comments: createAllowComments,
           source_url: createSourceUrl,
           category_id: createCategoryId,
           related_article_ids: createRelatedArticles.map((a) => a.id),
@@ -396,6 +454,7 @@ export const AdminDashboard: React.FC = () => {
         setCreateContent('');
         setCreateStatus('draft');
         setCreateIsVip(false);
+        setCreateAllowComments(false);
         setCreateSourceUrl('');
         setCreateRelatedArticles([]);
         fetchArticles(); // 重新加载
@@ -544,6 +603,7 @@ export const AdminDashboard: React.FC = () => {
           <Tab label={t('Sector Stats')} />
           <Tab label={t('Comment Moderation')} />
           <Tab label={t('Flash News Panel')} />
+          <Tab label={t('User Auditing')} />
         </Tabs>
 
         {/* Tab 1: 稿件列表管理 */}
@@ -890,6 +950,63 @@ export const AdminDashboard: React.FC = () => {
             </Grid>
           </Box>
         )}
+
+        {/* Tab 5: 分析师/作者入驻审核面板 */}
+        {activeTab === 4 && (
+          <Box sx={{ p: 3 }}>
+            <TableContainer sx={{ bgcolor: 'transparent', border: 'none' }}>
+              <Table sx={{ minWidth: 650 }}>
+                <TableHead sx={{ '& th': { borderBottom: '1px solid rgba(255, 255, 255, 0.05)', color: '#64748b', fontWeight: 700 } }}>
+                  <TableRow>
+                    <TableCell>用户名 (Username)</TableCell>
+                    <TableCell>昵称 (Nickname)</TableCell>
+                    <TableCell>资质说明 (Credentials)</TableCell>
+                    <TableCell align="center">动作 (Action)</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody sx={{ '& td': { borderBottom: '1px solid rgba(255, 255, 255, 0.04)', color: '#cbd5e1' } }}>
+                  {pendingWriters.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} align="center" sx={{ py: 6, color: '#64748b' }}>
+                        暂无待审核的写作者申请
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    pendingWriters.map((writer) => (
+                      <TableRow key={writer.user_id} sx={{ '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.01)' } }}>
+                        <TableCell sx={{ fontWeight: 600 }}>{writer.username}</TableCell>
+                        <TableCell>{writer.nickname}</TableCell>
+                        <TableCell>{writer.credentials || '未填写'}</TableCell>
+                        <TableCell align="center">
+                          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                            <Button
+                              variant="outlined"
+                              color="success"
+                              size="small"
+                              startIcon={<CheckIcon />}
+                              onClick={() => handleApproveWriter(writer.user_id, 'approve')}
+                            >
+                              批准 (Approve)
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              color="error"
+                              size="small"
+                              startIcon={<CloseIcon />}
+                              onClick={() => handleApproveWriter(writer.user_id, 'reject')}
+                            >
+                              拒绝 (Reject)
+                            </Button>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
+        )}
       </Paper>
 
       {/* 确认下架 */}
@@ -1142,6 +1259,19 @@ export const AdminDashboard: React.FC = () => {
                 sx={{ color: '#94a3b8', ml: 1 }}
               />
             </Grid>
+            <Grid size={{ xs: 6 }} sx={{ display: 'flex', alignItems: 'center' }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={editAllowComments}
+                    onChange={(e) => setEditAllowComments(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label={t('Allow Comments') || '开启评论'}
+                sx={{ color: '#94a3b8', ml: 1 }}
+              />
+            </Grid>
           </Grid>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
@@ -1357,6 +1487,19 @@ export const AdminDashboard: React.FC = () => {
                   />
                 }
                 label={t('VIP Exclusive')}
+                sx={{ color: '#94a3b8', ml: 1 }}
+              />
+            </Grid>
+            <Grid size={{ xs: 6 }} sx={{ display: 'flex', alignItems: 'center' }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={createAllowComments}
+                    onChange={(e) => setCreateAllowComments(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label={t('Allow Comments') || '开启评论'}
                 sx={{ color: '#94a3b8', ml: 1 }}
               />
             </Grid>
