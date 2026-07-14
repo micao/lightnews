@@ -83,6 +83,7 @@ export const Home: React.FC = () => {
   // 选项卡变动时，重置页面并重拉
   useEffect(() => {
     fetchArticles(1, true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -114,6 +115,7 @@ export const Home: React.FC = () => {
       observer.observe(observerRef.current);
     }
     return () => observer.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [displayedArticles, hasMore, loadingMore, page, activeTab]);
 
   return (

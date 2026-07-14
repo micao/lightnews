@@ -39,3 +39,7 @@
     *   新编写了 Django 管理指令 `attach_article_images`，能够自动抓取高精度的科技/金融图库图片配图，解决了由于 Nginx 容器内 `/code/mediafiles` 目录缺失静态图造成的页面 404 错误。
 *   **前端未使用变量的编译错误修复**:
     *   删除了 [AdminDashboard.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/pages/AdminDashboard.tsx) 中未使用的 `CircularProgress` 库引入，解决了在 strict 模式编译下造成打包失败的问题。
+*   **前端 Linter 警告清理**:
+    *   修复并处理了包括 [Home.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/pages/Home.tsx)、[ArticleDetail.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/pages/ArticleDetail.tsx) 与 [AdminDashboard.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/pages/AdminDashboard.tsx) 等页面的 4 项 React Hook `exhaustive-deps` 缺失依赖警告。
+    *   在 [AuthContext.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/context/AuthContext.tsx) 与 [I18nContext.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/context/I18nContext.tsx) 中添加了 ESLint 注释，解决了 2 项关于 Fast Refresh 混杂导出的警告。
+    *   本地核查命令 `make lint-frontend` 已实现 **0 警告，0 报错**。

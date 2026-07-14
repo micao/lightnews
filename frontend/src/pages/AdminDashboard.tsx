@@ -216,6 +216,7 @@ export const AdminDashboard: React.FC = () => {
     } else if (activeTab === 3) {
       fetchPendingLiveNews();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, activeTab]);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {

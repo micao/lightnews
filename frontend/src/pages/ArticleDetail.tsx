@@ -69,6 +69,7 @@ export const ArticleDetail: React.FC = () => {
     if (slug) {
       fetchArticleAndComments();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, authUser]);
 
   if (!article) {
