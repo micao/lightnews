@@ -191,7 +191,7 @@ NGINX_IMAGE=your-dockerhub-username/lightnews-frontend:latest
 首次部署项目或需要重新生成证书时，请 SSH 登录您的 VPS 服务器，进入项目部署目录并执行：
 ```bash
 cd /opt/lightnews
-sudo ./init-letsencrypt.sh
+./init-letsencrypt.sh
 ```
 
 **该脚本将全自动处理以下引导过程**：
