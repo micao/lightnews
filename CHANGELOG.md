@@ -44,4 +44,8 @@
     *   在 [AuthContext.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/context/AuthContext.tsx) 与 [I18nContext.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/context/I18nContext.tsx) 中添加了 ESLint 注释，解决了 2 项关于 Fast Refresh 混杂导出的警告。
     *   本地核查命令 `make lint-frontend` 已实现 **0 警告，0 报错**。
 *   **部署阶段数据库连接失败修复**:
-    *   移除了 CD 重启阶段的 `--no-deps` 限制。解决了当数据库 `db` 服务本身尚未启动时，直接应用 `--no-deps web nginx` 会导致容器间无法解析 `db` 主机名（Temporary failure in name resolution）的问题。现在 Docker Compose 会智能识别并拉起未启动的 `db` 容器，而对于已在线的 `db` 容器则保持无缝运行。
+    *   移除了 CD 重启阶段的 `--no-deps` 限制。解决了当数据库 `db` 服务本身尚未启动时，直接应用 `--no-deps web nginx` 会导致容器间无法解析 `db` 主机名（Temporary failure in name resolution）的问题。
+    *   在执行 Django 迁移前引入了基于 `pg_isready` 的轮询检测机制。避免了在 `db` 容器刚刚拉起、尚未完全就绪并接受端口监听时，立刻执行 `migrate` 会触发 `Connection refused` 拒绝连接错误的问题。现在部署脚本会自动等待 Postgres 完全就绪后再执行迁移。
+*   **域名硬编码与跨域报错修复**:
+    *   将 [AuthContext.tsx](file:///home/micao/PyCharmMiscProject/lightnews/frontend/src/context/AuthContext.tsx) 中的 `API_BASE` 改为自适应判断。本地开发时使用 `http://localhost`，在线上生产环境则使用相对路径 `""`，适配了域名和 IP 访问。
+    *   升级了 [middleware.py](file:///home/micao/PyCharmMiscProject/lightnews/lightnews/middleware.py) 的 `SimpleCORSMiddleware`。添加了在 `settings.DEBUG = False` 时的线上域名白名单映射（如 `lightinthebrain.com`），消除了线上跨域拦截错误。
