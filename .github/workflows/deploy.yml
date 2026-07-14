@@ -51,7 +51,8 @@ jobs:
         key: ${{ secrets.VPS_SSH_KEY }}
         passphrase: ${{ secrets.VPS_PASSPHRASE }} # 如果您的私钥设置了密码口令，请在 GitHub 中配置此 Secret；若无，置空或不配置即可
         script: |
-          cd /home/micao/PyCharmMiscProject/lightnews # 替换为您服务器上的实际部署目录
+          set -e # 任何步骤出错，立刻中断脚本执行，并向 GitHub Actions 报告失败
+          cd /opt/lightnews # 您的 VPS 服务器上克隆该 Git 仓库的实际目录（/opt/lightnews）
           
           # 1. 拉取最新的配置文件与 Docker Compose 文件
           git pull origin main
