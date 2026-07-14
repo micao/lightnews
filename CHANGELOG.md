@@ -26,7 +26,7 @@
 *   **SSL/HTTPS 容器化自动化配置**:
     *   在 [docker-compose.yaml](file:///home/micao/PyCharmMiscProject/lightnews/docker-compose.yaml) 中集成了官方 `certbot` 伴随服务，并通过 Nginx 容器内置的定时热重载命令（每 6 小时自动重载配置）保证了已续约证书能无感生效。
     *   升级了 Nginx 生产环境配置 [prod.conf](file:///home/micao/PyCharmMiscProject/lightnews/deploy/nginx/prod.conf)，实现了强制 301 从 HTTP 重定向至 HTTPS 端口（443），并应用了标准的现代 TLS 安全密码套件。
-    *   编写了 [init-letsencrypt.sh](file:///home/micao/PyCharmMiscProject/lightnews/init-letsencrypt.sh) 引导脚本，一键自动化了从“生成临时自签名证书让 Nginx 顺利起动”到“自动向 Let's Encrypt 申请替换真实正式证书”的闭环步骤。
+    *   编写了 [init-letsencrypt.sh](file:///home/micao/PyCharmMiscProject/lightnews/init-letsencrypt.sh) 引导脚本，实现了在没有 sudo 权限时自动利用容器内部创建证书及进行删除的闭环步骤，彻底规避了宿主机侧的 root/非 root 权限冲突问题。
 
 ### 🔧 改进与优化 (Changed)
 *   **数据库本地持久化**:
