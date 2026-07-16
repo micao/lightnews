@@ -35,8 +35,8 @@ class SimpleCORSMiddleware:
         # 如果请求来源在白名单内，动态设置 Access-Control-Allow-Origin
         if origin in allowed_origins:
             response['Access-Control-Allow-Origin'] = origin
-        else:
-            # 默认兜底
+        elif settings.DEBUG:
+            # 默认开发模式兜底
             response['Access-Control-Allow-Origin'] = 'http://localhost:5173'
 
         response['Access-Control-Allow-Credentials'] = 'true'
