@@ -14,6 +14,7 @@ services:
     build:
       context: .
       dockerfile: ./deploy/app/Dockerfile
+    image: ${BACKEND_IMAGE:-micao/lightnews-backend:latest}
     # 开发环境会挂载代码，实现热重载；生产环境直接运行容器内打包好的代码
     volumes:
       - .:/code
