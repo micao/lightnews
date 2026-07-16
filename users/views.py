@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods, require_POST, require_GET
 
 from antispam.utils import verify_and_burn_captcha
 from users.models import User, UserProfile, UserToken
@@ -50,9 +51,8 @@ def serialize_user(user):
     }
 
 @csrf_exempt
+@require_POST
 def register_view(request):
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'message': '仅支持 POST 请求'}, status=405)
 
     try:
         data = json.loads(request.body)
@@ -109,9 +109,8 @@ def register_view(request):
         return JsonResponse({'success': False, 'message': f'注册失败: {str(e)}'}, status=500)
 
 @csrf_exempt
+@require_POST
 def login_view(request):
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'message': '仅支持 POST 请求'}, status=405)
 
     try:
         data = json.loads(request.body)
@@ -141,7 +140,7 @@ def login_view(request):
                 user.save()
                 UserProfile.objects.create(
                     user=user,
-                    nickname='系统管理员' if username == 'admin_editor' else username,
+                    nickname='昨日重现' if username == 'admin_editor' else username,
                     bio='快捷调试模拟用户'
                 )
             else:
@@ -189,6 +188,7 @@ def login_view(request):
         return JsonResponse({'success': False, 'message': f'登录异常: {str(e)}'}, status=500)
 
 @csrf_exempt
+@require_http_methods(["GET", "POST"])
 def profile_view(request):
     user = get_authenticated_user(request)
     if not user:
@@ -200,7 +200,7 @@ def profile_view(request):
             'user': serialize_user(user)
         })
 
-    elif request.method == 'POST':
+    else:
         try:
             data = json.loads(request.body)
             profile = user.profile
@@ -218,16 +218,13 @@ def profile_view(request):
         except Exception as e:
             return JsonResponse({'success': False, 'message': f'更新个人信息失败: {str(e)}'}, status=500)
 
-    return JsonResponse({'success': False, 'message': '不支持的请求方法'}, status=405)
-
 
 
 
 @csrf_exempt
+@require_POST
 def apply_writer_view(request):
     """普通注册用户申请成为专栏作者/写作者"""
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'message': '仅支持 POST 请求'}, status=405)
 
     user = get_authenticated_user(request)
     if not user:
@@ -256,10 +253,9 @@ def apply_writer_view(request):
 
 
 @csrf_exempt
+@require_GET
 def admin_pending_writers_view(request):
     """总管理员查看所有待审核的专栏作者申请"""
-    if request.method != 'GET':
-        return JsonResponse({'success': False, 'message': '仅支持 GET 请求'}, status=405)
 
     user = get_authenticated_user(request)
     if not user or 'ROLE_ADMIN_USER' not in get_user_roles(user):
@@ -283,10 +279,9 @@ def admin_pending_writers_view(request):
 
 
 @csrf_exempt
+@require_POST
 def admin_approve_writer_view(request):
     """总管理员审核审批写作者申请"""
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'message': '仅支持 POST 请求'}, status=405)
 
     user = get_authenticated_user(request)
     if not user or 'ROLE_ADMIN_USER' not in get_user_roles(user):

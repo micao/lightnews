@@ -27,9 +27,9 @@ def get_optimized_keywords(title, category_name=""):
     if any(w in title_lower for w in ['code', 'compiler', 'programming', 'zig', 'rust', 'python', 'php', '代码', '编译器', '程序员', '开发']):
         return "code,programming", "technology"
 
-    if "前沿科技" in category_name:
+    if "Frontier Tech" in category_name:
         return "technology", "technology"
-    elif "独角兽" in category_name:
+    elif "Unicorn" in category_name:
         return "startup", "technology"
     return "business", "business"
 

@@ -60,7 +60,7 @@ const ZH_TRANSLATIONS: Record<string, string> = {
   'Not Logged In': '您尚未登录',
   'Login Please': '请先登录以访问个人中心、自选关注赛道和您的订阅权益。',
   'Go Login': '去登录',
-  'Administrator': '系统管理员',
+  'Administrator': '昨日重现',
   'Username': '用户名',
   'Bio': '个人简介',
   'Modify Profile': '修改资料',
@@ -199,7 +199,7 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
     '独角兽动态': 'Unicorn Dynamics',
     'VC/PE观察': 'VC/PE Insights',
     '全部推荐': 'All Recommendations',
-    '系统管理员': 'Administrator',
+    '昨日重现': 'Yesterday Once More',
     '新注册研究员': 'Research Associate',
     '快捷调试模拟用户': 'Mock User for Debugging',
   };

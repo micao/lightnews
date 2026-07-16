@@ -202,9 +202,9 @@ class Command(BaseCommand):
 
         # 获取当前系统的大分类
         categories_cache = {
-            '前沿科技': Category.objects.get_or_create(name='前沿科技')[0],
-            '独角兽动态': Category.objects.get_or_create(name='独角兽动态')[0],
-            'VC/PE观察': Category.objects.get_or_create(name='VC/PE观察')[0]
+            'Frontier Tech': Category.objects.get_or_create(name='Frontier Tech')[0],
+            'Unicorn Dynamics': Category.objects.get_or_create(name='Unicorn Dynamics')[0],
+            'VC/PE Insights': Category.objects.get_or_create(name='VC/PE Insights')[0]
         }
 
         # 智能匹配分类函数
@@ -212,14 +212,14 @@ class Command(BaseCommand):
             tags = node_tags.get(nid, [])
             tags_str = "".join(tags)
 
-            # 1. 创投/融资 -> VC/PE观察
+            # 1. 创投/融资 -> VC/PE Insights
             if any(k in tags_str for k in ['创投', '融资', '投资', '并购', '财', '股市', '基金']):
-                return categories_cache['VC/PE观察']
-            # 2. 公司/企业/项目/孵化器 -> 独角兽动态
+                return categories_cache['VC/PE Insights']
+            # 2. 公司/企业/项目/孵化器 -> Unicorn Dynamics
             if any(k in tags_str for k in ['公司', '企业', '项目', '孵化器', '小米', '苹果', '谷歌', '大厂', '收购']):
-                return categories_cache['独角兽动态']
-            # 3. 科技/技术/智能 -> 前沿科技
-            return categories_cache['前沿科技']
+                return categories_cache['Unicorn Dynamics']
+            # 3. 科技/技术/智能 -> Frontier Tech
+            return categories_cache['Frontier Tech']
 
         # 写入数据库
         import_count = 0

@@ -14,6 +14,7 @@ import {
   Chip,
   Card,
   CardContent,
+  CircularProgress,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import FavoriteIcon from '@mui/icons-material/Favorite';
@@ -37,6 +38,7 @@ export const ArticleDetail: React.FC = () => {
   const [newCommentText, setNewCommentText] = useState('');
   const [liked, setLiked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(true);
 
   // 评论验证码状态
   const [commentCaptchaId, setCommentCaptchaId] = useState('');
@@ -71,6 +73,8 @@ export const ArticleDetail: React.FC = () => {
       const artData = await artRes.json();
       if (artData.success) {
         setArticle(artData.article);
+      } else {
+        setArticle(null);
       }
 
       // 获取审核过的评论树
@@ -78,15 +82,24 @@ export const ArticleDetail: React.FC = () => {
       const cmtData = await cmtRes.json();
       if (cmtData.success) {
         setComments(cmtData.comments);
+      } else {
+        setComments([]);
       }
     } catch (err) {
       console.error('Fetch detail error:', err);
+      setArticle(null);
+    } finally {
+      setDetailLoading(false);
     }
   };
 
   useEffect(() => {
     if (slug) {
+      setDetailLoading(true);
+      setArticle(null);
+      setComments([]);
       fetchArticleAndComments();
+      window.scrollTo(0, 0); // 每次切换文章 slug 时强制屏幕立刻滚动回顶端
       if (authUser) {
         fetchCommentCaptcha();
       }
@@ -94,9 +107,23 @@ export const ArticleDetail: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, authUser]);
 
+  useEffect(() => {
+    if (article) {
+      window.scrollTo(0, 0); // 确保文章数据实际渲染完毕后，页面完全复位至最顶端
+    }
+  }, [article]);
+
+  if (detailLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', bgcolor: '#080c14' }}>
+        <CircularProgress color="primary" />
+      </Box>
+    );
+  }
+
   if (!article) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh', bgcolor: '#080c14' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', bgcolor: '#080c14' }}>
         <Typography color="error">{t('Loading article or it has been removed')}</Typography>
       </Box>
     );
@@ -411,7 +438,6 @@ export const ArticleDetail: React.FC = () => {
                       <Card
                         onClick={() => {
                           navigate(`/article/${rel.slug}`);
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
                         sx={{
                           height: '100%',

@@ -87,6 +87,12 @@ export const TradingViewMarketOverview: React.FC = () => {
     widgetContainer.appendChild(script);
     containerRef.current.appendChild(widgetContainer);
 
+    // 组件卸载或主题色切换时，清除容器内的脚本及产生的 iframe
+    return () => {
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+      }
+    };
   }, [colorMode]);
 
   return (
