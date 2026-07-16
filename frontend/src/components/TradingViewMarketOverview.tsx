@@ -10,10 +10,11 @@ export const TradingViewMarketOverview: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const currentContainer = containerRef.current;
+    if (!currentContainer) return;
 
     // 清空先前可能渲染的旧 iframe 组件，防止重复堆叠
-    containerRef.current.innerHTML = '';
+    currentContainer.innerHTML = '';
 
     // 创建 TradingView 所需的标准外层 DOM 节点
     const widgetContainer = document.createElement('div');
@@ -55,7 +56,7 @@ export const TradingViewMarketOverview: React.FC = () => {
       symbolActiveColor: "rgba(0, 102, 255, 0.12)",
       tabs: [
         {
-          title: "指数",
+          title: t("Indices"),
           symbols: [
             { s: "FOREXCOM:SPXUSD", d: "标普500" },
             { s: "FOREXCOM:NSXUSD", d: "纳指100" },
@@ -64,7 +65,7 @@ export const TradingViewMarketOverview: React.FC = () => {
           ]
         },
         {
-          title: "股票",
+          title: t("Stocks"),
           symbols: [
             { s: "NASDAQ:AAPL", d: "苹果" },
             { s: "NASDAQ:ADBE", d: "Adobe" },
@@ -73,7 +74,7 @@ export const TradingViewMarketOverview: React.FC = () => {
           ]
         },
         {
-          title: "加密货币",
+          title: t("Crypto"),
           symbols: [
             { s: "BITSTAMP:BTCUSD", d: "比特币" },
             { s: "BITSTAMP:ETHUSD", d: "以太坊" },
@@ -85,15 +86,15 @@ export const TradingViewMarketOverview: React.FC = () => {
 
     script.text = JSON.stringify(config);
     widgetContainer.appendChild(script);
-    containerRef.current.appendChild(widgetContainer);
+    currentContainer.appendChild(widgetContainer);
 
     // 组件卸载或主题色切换时，清除容器内的脚本及产生的 iframe
     return () => {
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
+      if (currentContainer) {
+        currentContainer.innerHTML = '';
       }
     };
-  }, [colorMode]);
+  }, [colorMode, t]);
 
   return (
     <Paper sx={{ p: 2, bgcolor: '#101726', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
