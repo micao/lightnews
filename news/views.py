@@ -34,28 +34,29 @@ def serialize_article(article, request=None, is_detail=False):
     author_name = author_profile.nickname if author_profile else article.author.username
 
     related_serialized = []
-    try:
-        for rel in article.related_articles.all():
-            rel_author_profile = getattr(rel.author, 'profile', None)
-            rel_author_name = rel_author_profile.nickname if rel_author_profile else rel.author.username
-            related_serialized.append({
-                'id': rel.id,
-                'title': rel.title,
-                'slug': rel.slug,
-                'summary': rel.summary or '',
-                'thumbnail': rel.thumbnail or '',
-                'publish_at': rel.publish_at.strftime('%Y-%m-%d') if rel.publish_at else '',
-                'category': {
-                    'id': rel.category.id,
-                    'name': rel.category.name
-                },
-                'author': {
-                    'id': rel.author.id,
-                    'nickname': rel_author_name
-                }
-            })
-    except Exception:
-        pass
+    if is_detail:
+        try:
+            for rel in article.related_articles.select_related('category', 'author', 'author__profile').all():
+                rel_author_profile = getattr(rel.author, 'profile', None)
+                rel_author_name = rel_author_profile.nickname if rel_author_profile else rel.author.username
+                related_serialized.append({
+                    'id': rel.id,
+                    'title': rel.title,
+                    'slug': rel.slug,
+                    'summary': rel.summary or '',
+                    'thumbnail': rel.thumbnail or '',
+                    'publish_at': rel.publish_at.strftime('%Y-%m-%d') if rel.publish_at else '',
+                    'category': {
+                        'id': rel.category.id,
+                        'name': rel.category.name
+                    },
+                    'author': {
+                        'id': rel.author.id,
+                        'nickname': rel_author_name
+                    }
+                })
+        except Exception:
+            pass
 
     return {
         'id': article.id,
