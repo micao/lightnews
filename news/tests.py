@@ -11,8 +11,8 @@ class NewsArticleAPITests(TestCase):
     def setUp(self):
         self.client = Client()
         # 创建分类
-        self.category_tech = Category.objects.create(name='前沿科技', slug='frontier-tech')
-        self.category_unicorn = Category.objects.create(name='独角兽动态', slug='unicorn-dynamics')
+        self.category_tech = Category.objects.create(name='Frontier Tech', slug='frontier-tech')
+        self.category_unicorn = Category.objects.create(name='Unicorn Dynamics', slug='unicorn-dynamics')
 
         # 创建研究员/作者
         self.author = User.objects.create_user(username='news_author', password='password123')
@@ -75,7 +75,7 @@ class NewsArticleAPITests(TestCase):
         """测试按分类筛选文章"""
         response = self.client.get(
             reverse('article_list_view'),
-            {'category': '独角兽动态'}
+            {'category': 'Unicorn Dynamics'}
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()

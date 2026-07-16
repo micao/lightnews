@@ -54,9 +54,9 @@ def get_optimized_keywords(title, category_name=""):
         return "code,programming,terminal"
 
     # 默认分类兜底
-    if "前沿科技" in category_name:
+    if "Frontier Tech" in category_name:
         return "technology,abstract"
-    elif "独角兽" in category_name:
+    elif "Unicorn" in category_name:
         return "startup,office"
     return "business,network"
 
@@ -125,17 +125,17 @@ class Command(BaseCommand):
         feeds = [
             {
                 'url': 'https://techcrunch.com/category/startups/feed/',
-                'category': '独角兽动态',
+                'category': 'Unicorn Dynamics',
                 'name': 'TechCrunch Startups'
             },
             {
                 'url': 'https://venturebeat.com/feed/',
-                'category': '前沿科技',
+                'category': 'Frontier Tech',
                 'name': 'VentureBeat AI'
             },
             {
                 'url': 'https://news.ycombinator.com/rss',
-                'category': 'VC/PE观察',
+                'category': 'VC/PE Insights',
                 'name': 'Hacker News'
             }
         ]

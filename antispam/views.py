@@ -2,15 +2,15 @@ import random
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET
 
 from antispam.models import Captcha
 
 
 @csrf_exempt
+@require_GET
 def captcha_view(request):
     """数学计算验证码生成接口"""
-    if request.method != 'GET':
-        return JsonResponse({'success': False, 'message': '仅支持 GET 请求'}, status=405)
 
     num1 = random.randint(1, 10)
     num2 = random.randint(1, 10)

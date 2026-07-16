@@ -3,6 +3,7 @@ import json
 from django.db import models
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 
 from antispam.utils import verify_and_burn_captcha
 from interactions.models import Comment, Like
@@ -58,14 +59,12 @@ def comment_list_view(request):
     return JsonResponse({'success': True, 'comments': serialized})
 
 @csrf_exempt
+@require_POST
 def comment_create_view(request):
     """提交评论 (需要登录)"""
     user = get_authenticated_user(request)
     if not user:
         return JsonResponse({'success': False, 'message': '需要登录才能发表评论'}, status=401)
-
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'message': '仅支持 POST 请求'}, status=405)
 
     try:
         data = json.loads(request.body)
@@ -133,14 +132,12 @@ def comment_create_view(request):
         return JsonResponse({'success': False, 'message': f'发表评论异常: {str(e)}'}, status=500)
 
 @csrf_exempt
+@require_POST
 def like_toggle_view(request):
     """点赞 / 取消点赞 (需要登录)"""
     user = get_authenticated_user(request)
     if not user:
         return JsonResponse({'success': False, 'message': '需要登录才能点赞'}, status=401)
-
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'message': '仅支持 POST 请求'}, status=405)
 
     try:
         data = json.loads(request.body)
@@ -212,14 +209,12 @@ def admin_comments_view(request):
     return JsonResponse({'success': True, 'comments': serialized})
 
 @csrf_exempt
+@require_POST
 def admin_comment_approve_view(request):
     """审核评论通过或删除 (仅限管理员)"""
     user = get_authenticated_user(request)
     if not user or 'ROLE_ADMIN_USER' not in get_user_roles(user):
         return JsonResponse({'success': False, 'message': '无权进行此操作'}, status=403)
-
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'message': '仅支持 POST 请求'}, status=405)
 
     try:
         data = json.loads(request.body)

@@ -25,7 +25,7 @@ class InteractionsAPITests(TestCase):
         self.admin_token = UserToken.objects.create(user=self.admin, token='admin_token')
 
         # 创建文章分类与文章
-        self.category = Category.objects.create(name='前沿科技', slug='tech')
+        self.category = Category.objects.create(name='Frontier Tech', slug='tech')
         self.article = Article.objects.create(
             title='测试互动深度文章',
             slug='test-interactive-article',

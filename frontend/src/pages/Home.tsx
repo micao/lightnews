@@ -51,13 +51,7 @@ export const Home: React.FC = () => {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const categoryMap: Record<string, string> = {
-        'All Recommendations': '',
-        'Frontier Tech': '前沿科技',
-        'Unicorn Dynamics': '独角兽动态',
-        'VC/PE Insights': 'VC/PE观察'
-      };
-      const categoryParam = categoryMap[currentCategory] || '';
+      const categoryParam = currentCategory === 'All Recommendations' ? '' : currentCategory;
       const res = await fetch(
         `${API_BASE}/api/articles/?page=${pageNum}&limit=3&category=${encodeURIComponent(categoryParam)}`,
         { headers }
