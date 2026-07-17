@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Card, Chip, IconButton, Badge } from '@mui/material';
+import { Box, Typography, Card, Chip, IconButton, Badge, Skeleton } from '@mui/material';
 import FlashOnIcon from '@mui/icons-material/FlashOn';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
@@ -62,73 +62,94 @@ export const LiveNewsList: React.FC = () => {
       </Box>
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, maxHeight: '600px', overflowY: 'auto', pr: 0.5 }}>
-        {newsList.map((item) => {
-          const isExpanded = expandedId === item.id;
-          const contentLimit = item.content.length > 70 ? `${item.content.substring(0, 70)}...` : item.content;
-
-          return (
+        {newsList.length === 0 ? (
+          Array.from(new Array(4)).map((_, idx) => (
             <Box
-              key={item.id}
+              key={idx}
               sx={{
                 p: 1.5,
                 borderRadius: 2,
                 bgcolor: 'rgba(255, 255, 255, 0.02)',
-                borderLeft: `4px solid ${getTagColor(item.tag)}`,
-                transition: 'all 0.2s',
-                '&:hover': {
-                  bgcolor: 'rgba(255, 255, 255, 0.04)',
-                },
+                borderLeft: '4px solid rgba(255, 255, 255, 0.05)',
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="caption" sx={{ fontFamily: 'monospace', fontWeight: 700, color: 'primary.main' }}>
-                    {item.publish_time}
-                  </Typography>
-                  {item.urgency === 'critical' && (
-                    <Chip label={t('Exclusive')} size="small" color="error" sx={{ height: 16, fontSize: '0.625rem', fontWeight: 700 }} />
-                  )}
-                </Box>
-                
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Chip
-                    label={t(item.tag)}
-                    size="small"
-                    sx={{
-                      height: 16,
-                      fontSize: '0.625rem',
-                      fontWeight: 700,
-                      bgcolor: `${getTagColor(item.tag)}1a`,
-                      color: getTagColor(item.tag),
-                      border: `1px solid ${getTagColor(item.tag)}33`,
-                    }}
-                  />
-                </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
+                <Skeleton variant="text" width="30%" height={16} sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+                <Skeleton variant="text" width="20%" height={16} sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
               </Box>
-
-              <Typography
-                variant="body2"
-                sx={{
-                  color: '#f1f5f9',
-                  fontWeight: item.urgency === 'critical' ? 700 : 500,
-                  cursor: item.content.length > 70 ? 'pointer' : 'default',
-                  lineHeight: 1.5,
-                }}
-                onClick={() => item.content.length > 70 && handleToggleExpand(item.id)}
-              >
-                {isExpanded ? item.content : contentLimit}
-              </Typography>
-
-              {item.content.length > 70 && (
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.5 }}>
-                  <IconButton size="small" onClick={() => handleToggleExpand(item.id)} sx={{ p: 0.25, color: '#64748b' }}>
-                    {isExpanded ? <KeyboardArrowUpIcon fontSize="small" /> : <KeyboardArrowDownIcon fontSize="small" />}
-                  </IconButton>
-                </Box>
-              )}
+              <Skeleton variant="text" width="90%" height={16} sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+              <Skeleton variant="text" width="80%" height={16} sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
             </Box>
-          );
-        })}
+          ))
+        ) : (
+          newsList.map((item) => {
+            const isExpanded = expandedId === item.id;
+            const contentLimit = item.content.length > 70 ? `${item.content.substring(0, 70)}...` : item.content;
+
+            return (
+              <Box
+                key={item.id}
+                sx={{
+                  p: 1.5,
+                  borderRadius: 2,
+                  bgcolor: 'rgba(255, 255, 255, 0.02)',
+                  borderLeft: `4px solid ${getTagColor(item.tag)}`,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    bgcolor: 'rgba(255, 255, 255, 0.04)',
+                  },
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="caption" sx={{ fontFamily: 'monospace', fontWeight: 700, color: 'primary.main' }}>
+                      {item.publish_time}
+                    </Typography>
+                    {item.urgency === 'critical' && (
+                      <Chip label={t('Exclusive')} size="small" color="error" sx={{ height: 16, fontSize: '0.625rem', fontWeight: 700 }} />
+                    )}
+                  </Box>
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Chip
+                      label={t(item.tag)}
+                      size="small"
+                      sx={{
+                        height: 16,
+                        fontSize: '0.625rem',
+                        fontWeight: 700,
+                        bgcolor: `${getTagColor(item.tag)}1a`,
+                        color: getTagColor(item.tag),
+                        border: `1px solid ${getTagColor(item.tag)}33`,
+                      }}
+                    />
+                  </Box>
+                </Box>
+
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#f1f5f9',
+                    fontWeight: item.urgency === 'critical' ? 700 : 500,
+                    cursor: item.content.length > 70 ? 'pointer' : 'default',
+                    lineHeight: 1.5,
+                  }}
+                  onClick={() => item.content.length > 70 && handleToggleExpand(item.id)}
+                >
+                  {isExpanded ? item.content : contentLimit}
+                </Typography>
+
+                {item.content.length > 70 && (
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.5 }}>
+                    <IconButton size="small" onClick={() => handleToggleExpand(item.id)} sx={{ p: 0.25, color: '#64748b' }}>
+                      {isExpanded ? <KeyboardArrowUpIcon fontSize="small" /> : <KeyboardArrowDownIcon fontSize="small" />}
+                    </IconButton>
+                  </Box>
+                )}
+              </Box>
+            );
+          })
+        )}
       </Box>
     </Card>
   );

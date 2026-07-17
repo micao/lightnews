@@ -13,6 +13,7 @@ import {
   Avatar,
   Paper,
   CircularProgress,
+  Skeleton,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import FavoriteIcon from '@mui/icons-material/Favorite';
@@ -145,215 +146,262 @@ export const Home: React.FC = () => {
         {/* 左侧及中间主要新闻内容流 */}
         <Grid size={{ xs: 12, md: 8 }}>
           {/* 头条大卡片 - 仅在“全部推荐”第一页且有数据时展现 */}
-          {activeTab === 0 && displayedArticles[0] && (
-            <Card
-              sx={{
-                mb: 4,
-                bgcolor: '#101726',
-                position: 'relative',
-                overflow: 'hidden',
-                cursor: 'pointer',
-                transition: 'transform 0.2s, box-shadow 0.2s',
-                '&:hover': {
-                  transform: 'translateY(-4px)',
-                  boxShadow: '0 8px 24px rgba(0, 102, 255, 0.15)',
-                },
-              }}
-              onClick={() => handleArticleClick(displayedArticles[0].slug)}
-            >
-              <Box
+          {activeTab === 0 && (
+            loadingMore && displayedArticles.length === 0 ? (
+              <Card sx={{ mb: 4, bgcolor: '#101726' }}>
+                <Skeleton variant="rectangular" height={260} animation="wave" sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+                <CardContent sx={{ p: 3 }}>
+                  <Skeleton variant="text" width="60%" height={32} sx={{ mb: 1.5, bgcolor: 'rgba(255,255,255,0.06)' }} />
+                  <Skeleton variant="text" width="90%" height={20} sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+                  <Skeleton variant="text" width="80%" height={20} sx={{ mb: 2.5, bgcolor: 'rgba(255,255,255,0.06)' }} />
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Skeleton variant="circular" width={24} height={24} sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+                      <Skeleton variant="text" width={60} height={16} sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+                    </Box>
+                    <Skeleton variant="text" width={100} height={16} sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+                  </Box>
+                </CardContent>
+              </Card>
+            ) : displayedArticles[0] ? (
+              <Card
                 sx={{
-                  height: 260,
-                  backgroundImage: displayedArticles[0].thumbnail ? `url(${displayedArticles[0].thumbnail})` : 'none',
-                  background: !displayedArticles[0].thumbnail ? 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)' : undefined,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  mb: 4,
+                  bgcolor: '#101726',
                   position: 'relative',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0 8px 24px rgba(0, 102, 255, 0.15)',
+                  },
                 }}
+                onClick={() => handleArticleClick(displayedArticles[0].slug)}
               >
-                {displayedArticles[0].thumbnail && (
+                <Box
+                  sx={{
+                    height: 260,
+                    backgroundImage: displayedArticles[0].thumbnail ? `url(${displayedArticles[0].thumbnail})` : 'none',
+                    background: !displayedArticles[0].thumbnail ? 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)' : undefined,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative',
+                  }}
+                >
+                  {displayedArticles[0].thumbnail && (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        bgcolor: 'rgba(15, 23, 42, 0.65)',
+                        zIndex: 1,
+                      }}
+                    />
+                  )}
                   <Box
                     sx={{
                       position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      bgcolor: 'rgba(15, 23, 42, 0.65)',
-                      zIndex: 1,
+                      top: 16,
+                      left: 16,
+                      display: 'flex',
+                      gap: 1,
+                      zIndex: 2,
                     }}
-                  />
-                )}
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: 16,
-                    left: 16,
-                    display: 'flex',
-                    gap: 1,
-                    zIndex: 2,
-                  }}
-                >
-                  <Chip label={t('Deep Research')} color="primary" size="small" sx={{ fontWeight: 700 }} />
-                  {displayedArticles[0].is_vip_only && (
-                    <Chip
-                      icon={<StarIcon sx={{ color: 'secondary.main !important' }} />}
-                      label={t('Exclusive')}
-                      size="small"
-                      sx={{ bgcolor: 'rgba(16, 185, 129, 0.15)', color: 'secondary.main', fontWeight: 700 }}
-                    />
-                  )}
-                </Box>
-                <Typography variant="h3" sx={{ color: '#fff', textAlign: 'center', px: 4, fontWeight: 900, zIndex: 2, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
-                  {t('LIGHT IN THE BRAIN')}
-                </Typography>
-              </Box>
-
-              <CardContent sx={{ p: 3 }}>
-                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1.5, color: '#f8fafc' }}>
-                  {displayedArticles[0].title}
-                </Typography>
-                <Typography variant="body2" color="textSecondary" sx={{ mb: 2.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                  {displayedArticles[0].summary}
-                </Typography>
-
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem', bgcolor: 'primary.main', color: '#fff' }}>
-                      {displayedArticles[0].author.nickname.charAt(0)}
-                    </Avatar>
-                    <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>
-                      {displayedArticles[0].author.nickname}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: '#475569' }}>
-                      •
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-                      {displayedArticles[0].publish_at}
-                    </Typography>
+                  >
+                    <Chip label={t('Deep Research')} color="primary" size="small" sx={{ fontWeight: 700 }} />
+                    {displayedArticles[0].is_vip_only && (
+                      <Chip
+                        icon={<StarIcon sx={{ color: 'secondary.main !important' }} />}
+                        label={t('Exclusive')}
+                        size="small"
+                        sx={{ bgcolor: 'rgba(16, 185, 129, 0.15)', color: 'secondary.main', fontWeight: 700 }}
+                      />
+                    )}
                   </Box>
+                  <Typography variant="h3" sx={{ color: '#fff', textAlign: 'center', px: 4, fontWeight: 900, zIndex: 2, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+                    {t('LIGHT IN THE BRAIN')}
+                  </Typography>
+                </Box>
 
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, color: '#64748b' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <VisibilityIcon sx={{ fontSize: 16 }} />
-                      <Typography variant="caption">{displayedArticles[0].views_count.toLocaleString()}</Typography>
+                <CardContent sx={{ p: 3 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700, mb: 1.5, color: '#f8fafc' }}>
+                    {displayedArticles[0].title}
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary" sx={{ mb: 2.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {displayedArticles[0].summary}
+                  </Typography>
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem', bgcolor: 'primary.main', color: '#fff' }}>
+                        {displayedArticles[0].author.nickname.charAt(0)}
+                      </Avatar>
+                      <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>
+                        {displayedArticles[0].author.nickname}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#475569' }}>
+                        •
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                        {displayedArticles[0].publish_at}
+                      </Typography>
                     </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <FavoriteIcon sx={{ fontSize: 16 }} />
-                      <Typography variant="caption">{displayedArticles[0].likes_count}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <CommentIcon sx={{ fontSize: 16 }} />
-                      <Typography variant="caption">{displayedArticles[0].comments_count}</Typography>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, color: '#64748b' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <VisibilityIcon sx={{ fontSize: 16 }} />
+                        <Typography variant="caption">{displayedArticles[0].views_count.toLocaleString()}</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <FavoriteIcon sx={{ fontSize: 16 }} />
+                        <Typography variant="caption">{displayedArticles[0].likes_count}</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <CommentIcon sx={{ fontSize: 16 }} />
+                        <Typography variant="caption">{displayedArticles[0].comments_count}</Typography>
+                      </Box>
                     </Box>
                   </Box>
-                </Box>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            ) : null
           )}
 
           {/* 新闻文章流列表 */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {displayedArticles
-              .filter((_, idx) => !(activeTab === 0 && idx === 0))
-              .map((item) => (
-                <Card
-                  key={item.id}
-                  sx={{
-                    bgcolor: '#101726',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      transform: 'translateX(4px)',
-                      borderColor: 'rgba(0, 102, 255, 0.2)',
-                    },
-                  }}
-                  onClick={() => handleArticleClick(item.slug)}
-                >
+            {loadingMore && displayedArticles.length === 0 ? (
+              Array.from(new Array(3)).map((_, idx) => (
+                <Card key={idx} sx={{ bgcolor: '#101726' }}>
                   <Grid container>
                     <Grid size={{ xs: 12, sm: 4 }} sx={{ display: 'flex', alignItems: 'stretch', overflow: 'hidden', borderRadius: '10px 0 0 10px' }}>
-                      <Box
-                        sx={{
-                          width: '100%',
-                          minHeight: 140,
-                          backgroundImage: item.thumbnail ? `url(${item.thumbnail})` : 'none',
-                          background: !item.thumbnail ? (item.id % 2 === 0
-                            ? 'linear-gradient(135deg, #101726 0%, #1e293b 100%)'
-                            : 'linear-gradient(135deg, #080c14 0%, #111827 100%)') : undefined,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#64748b',
-                          transition: 'transform 0.3s ease',
-                          '&:hover': {
-                            transform: item.thumbnail ? 'scale(1.05)' : 'none',
-                          }
-                        }}
-                      >
-                        {!item.thumbnail && (
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                            {t(item.category.name)}
-                          </Typography>
-                        )}
-                      </Box>
+                      <Skeleton variant="rectangular" width="100%" height={140} animation="wave" sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
                     </Grid>
-                    
                     <Grid size={{ xs: 12, sm: 8 }}>
                       <CardContent sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                         <Box>
-                          <Box sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
-                            <Chip label={t(item.category.name)} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.04)', color: '#94a3b8', height: 18, fontSize: '0.6875rem' }} />
-                            {item.is_vip_only && (
-                              <Chip
-                                icon={<StarIcon sx={{ color: 'secondary.main !important', fontSize: '10px !important' }} />}
-                                label={t('Exclusive Column')}
-                                size="small"
-                                sx={{ bgcolor: 'rgba(16, 185, 129, 0.12)', color: 'secondary.main', height: 18, fontSize: '0.6875rem', fontWeight: 700 }}
-                              />
-                            )}
-                          </Box>
-                          <Typography variant="h6" sx={{ color: '#f8fafc', fontWeight: 700, mb: 1, '&:hover': { color: 'primary.main' } }}>
-                            {item.title}
-                          </Typography>
-                          <Typography variant="body2" color="textSecondary" sx={{ mb: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                            {item.summary}
-                          </Typography>
+                          <Skeleton variant="text" width="20%" height={18} sx={{ mb: 1, bgcolor: 'rgba(255,255,255,0.06)' }} />
+                          <Skeleton variant="text" width="80%" height={24} sx={{ mb: 1.5, bgcolor: 'rgba(255,255,255,0.06)' }} />
+                          <Skeleton variant="text" width="95%" height={16} sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+                          <Skeleton variant="text" width="90%" height={16} sx={{ mb: 2, bgcolor: 'rgba(255,255,255,0.06)' }} />
                         </Box>
-
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>
-                              {item.author.nickname}
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: '#475569' }}>
-                              •
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: '#64748b' }}>
-                              {item.publish_at.split(' ')[0]}
-                            </Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Skeleton variant="text" width={60} height={16} sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+                            <Skeleton variant="text" width={40} height={16} sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
                           </Box>
-
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, color: '#64748b' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-                              <VisibilityIcon sx={{ fontSize: 14 }} />
-                              <Typography variant="caption">{(item.views_count / 1000).toFixed(1)}k</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-                              <FavoriteIcon sx={{ fontSize: 14 }} />
-                              <Typography variant="caption">{item.likes_count}</Typography>
-                            </Box>
-                          </Box>
+                          <Skeleton variant="text" width={50} height={16} sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
                         </Box>
                       </CardContent>
                     </Grid>
                   </Grid>
                 </Card>
-              ))}
+              ))
+            ) : (
+              displayedArticles
+                .filter((_, idx) => !(activeTab === 0 && idx === 0))
+                .map((item) => (
+                  <Card
+                    key={item.id}
+                    sx={{
+                      bgcolor: '#101726',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        transform: 'translateX(4px)',
+                        borderColor: 'rgba(0, 102, 255, 0.2)',
+                      },
+                    }}
+                    onClick={() => handleArticleClick(item.slug)}
+                  >
+                    <Grid container>
+                      <Grid size={{ xs: 12, sm: 4 }} sx={{ display: 'flex', alignItems: 'stretch', overflow: 'hidden', borderRadius: '10px 0 0 10px' }}>
+                        <Box
+                          sx={{
+                            width: '100%',
+                            minHeight: 140,
+                            backgroundImage: item.thumbnail ? `url(${item.thumbnail})` : 'none',
+                            background: !item.thumbnail ? (item.id % 2 === 0
+                              ? 'linear-gradient(135deg, #101726 0%, #1e293b 100%)'
+                              : 'linear-gradient(135deg, #080c14 0%, #111827 100%)') : undefined,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#64748b',
+                            transition: 'transform 0.3s ease',
+                            '&:hover': {
+                              transform: item.thumbnail ? 'scale(1.05)' : 'none',
+                            }
+                          }}
+                        >
+                          {!item.thumbnail && (
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                              {t(item.category.name)}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Grid>
+                      
+                      <Grid size={{ xs: 12, sm: 8 }}>
+                        <CardContent sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                          <Box>
+                            <Box sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
+                              <Chip label={t(item.category.name)} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.04)', color: '#94a3b8', height: 18, fontSize: '0.6875rem' }} />
+                              {item.is_vip_only && (
+                                <Chip
+                                  icon={<StarIcon sx={{ color: 'secondary.main !important', fontSize: '10px !important' }} />}
+                                  label={t('Exclusive Column')}
+                                  size="small"
+                                  sx={{ bgcolor: 'rgba(16, 185, 129, 0.12)', color: 'secondary.main', height: 18, fontSize: '0.6875rem', fontWeight: 700 }}
+                                />
+                              )}
+                            </Box>
+                            <Typography variant="h6" sx={{ color: '#f8fafc', fontWeight: 700, mb: 1, '&:hover': { color: 'primary.main' } }}>
+                              {item.title}
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary" sx={{ mb: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                              {item.summary}
+                            </Typography>
+                          </Box>
+
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>
+                                {item.author.nickname}
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: '#475569' }}>
+                                •
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: '#64748b' }}>
+                                {item.publish_at.split(' ')[0]}
+                              </Typography>
+                            </Box>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, color: '#64748b' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+                                <VisibilityIcon sx={{ fontSize: 14 }} />
+                                <Typography variant="caption">{(item.views_count / 1000).toFixed(1)}k</Typography>
+                              </Box>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+                                <FavoriteIcon sx={{ fontSize: 14 }} />
+                                <Typography variant="caption">{item.likes_count}</Typography>
+                              </Box>
+                            </Box>
+                          </Box>
+                        </CardContent>
+                      </Grid>
+                    </Grid>
+                  </Card>
+                ))
+            )}
           </Box>
 
           {/* 无限滚动监听锚点与Loading指示器 */}
