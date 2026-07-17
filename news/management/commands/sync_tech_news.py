@@ -43,7 +43,7 @@ class Command(BaseCommand):
                 xml_data = response.read()
 
             root = ET.fromstring(xml_data)
-            items = root.findall('.//item')[:3]  # 只处理最新的 3 条以防过度占用连接
+            items = root.findall('.//item')[:15]  # 检查最新的 15 条，但每次运行最多只新增抓取 3 条
 
             author = User.objects.filter(username='admin_editor').first()
             if not author:
@@ -58,6 +58,8 @@ class Command(BaseCommand):
             imported_count = 0
 
             for item in items:
+                if imported_count >= 3:
+                    break
                 title = item.find('title').text or ''
                 desc = item.find('description').text or ''
                 link = item.find('link').text or ''

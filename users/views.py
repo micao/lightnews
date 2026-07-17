@@ -53,6 +53,7 @@ def serialize_user(user):
 @csrf_exempt
 @require_POST
 def register_view(request):
+    return JsonResponse({'success': False, 'message': '系统维护中，暂时关闭新用户注册。'}, status=403)
 
     try:
         data = json.loads(request.body)

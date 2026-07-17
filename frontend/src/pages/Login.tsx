@@ -299,6 +299,7 @@ export const Login: React.FC = () => {
                 fullWidth
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                disabled={true}
                 placeholder="作为登录唯一凭证，不少于3位"
                 sx={{
                   '& .MuiInputLabel-root': { color: '#64748b' },
@@ -314,6 +315,7 @@ export const Login: React.FC = () => {
                 fullWidth
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
+                disabled={true}
                 placeholder="展示在评论和分析师页的别名"
                 sx={{
                   '& .MuiInputLabel-root': { color: '#64748b' },
@@ -329,6 +331,7 @@ export const Login: React.FC = () => {
                 fullWidth
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
+                disabled={true}
                 placeholder="11位中国大陆手机号（可选）"
                 sx={{
                   '& .MuiInputLabel-root': { color: '#64748b' },
@@ -345,6 +348,7 @@ export const Login: React.FC = () => {
                 fullWidth
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={true}
                 placeholder="作为登录密码，不少于6位"
                 sx={{
                   '& .MuiInputLabel-root': { color: '#64748b' },
@@ -362,6 +366,7 @@ export const Login: React.FC = () => {
                   variant="outlined"
                   value={captchaAnswer}
                   onChange={(e) => setCaptchaAnswer(e.target.value)}
+                  disabled={true}
                   placeholder="计算结果"
                   sx={{
                     flex: 1,
@@ -375,6 +380,7 @@ export const Login: React.FC = () => {
                 <Button
                   variant="outlined"
                   onClick={fetchCaptcha}
+                  disabled={true}
                   sx={{
                     height: 56,
                     minWidth: 120,
@@ -402,10 +408,11 @@ export const Login: React.FC = () => {
                 variant="contained"
                 color="secondary"
                 fullWidth
-                disabled={loading}
+                // disabled={loading}
+                disabled={true}
                 sx={{ color: '#fff', py: 1.2, mt: 1 }}
               >
-                {loading ? <CircularProgress size={24} /> : '注册并加入平台'}
+                {loading ? <CircularProgress size={24} /> : '注册平台（暂未开放）'}
               </Button>
 
               <Box sx={{ textAlign: 'center', mt: 1 }}>

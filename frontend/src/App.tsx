@@ -7,6 +7,7 @@ import { theme } from './theme';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { I18nProvider, useI18n } from './context/I18nContext';
 import { Home } from './pages/Home';
+import { AiHome } from './pages/AiHome';
 import { ArticleDetail } from './pages/ArticleDetail';
 import { Login } from './pages/Login';
 import { Profile } from './pages/Profile';
@@ -20,7 +21,7 @@ const AppNavigation: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const hideTicker = ['/login', '/admin-dashboard'].includes(location.pathname);
+  const hideTicker = ['/login', '/admin-dashboard', '/ai'].includes(location.pathname);
 
   return (
     <>
@@ -49,6 +50,21 @@ const AppNavigation: React.FC = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Button component={Link} to="/" sx={{ color: '#94a3b8', '&:hover': { color: 'primary.main' } }}>
                 {t('Home Recommend')}
+              </Button>
+              <Button
+                component={Link}
+                to="/ai"
+                sx={{
+                  color: location.pathname === '/ai' ? '#a855f7' : '#94a3b8',
+                  fontWeight: 700,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    color: '#a855f7',
+                    textShadow: '0 0 8px rgba(168, 85, 247, 0.4)'
+                  }
+                }}
+              >
+                🤖 {t('AI Zone')}
               </Button>
 
               {/* 国际化语言切换按钮 */}
@@ -140,6 +156,7 @@ export const AppContent: React.FC = () => {
       <Box sx={{ flexGrow: 1 }}>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/ai" element={<AiHome />} />
           <Route path="/article/:slug" element={<ArticleDetail />} />
           <Route path="/login" element={<Login />} />
           <Route path="/profile" element={<Profile />} />
