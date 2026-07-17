@@ -38,7 +38,7 @@ def get_optimized_keywords(title, category_name=""):
     title_lower = title.lower()
 
     # 根据标题内容映射最贴切的无版权 stock photo 关键词
-    if any(w in title_lower for w in ['ai', 'artificial intelligence', '人工智能', '智能', '模型', 'gpt', 'llm', 'deepseek', 'neural', 'hugging face']):
+    if any(w in title_lower for w in ['ai', 'artificial intelligence', '人工智能', '智能', '模型', 'gpt', 'llm', 'deepseek', 'neural', 'hugging face', 'machine learning']):
         return "neural,network,artificial,intelligence"
     if any(w in title_lower for w in ['robot', 'hardware', '机器人', '硬件', 'device', 'drone', '具身智能']):
         return "robot,robotic,automation"
@@ -46,19 +46,10 @@ def get_optimized_keywords(title, category_name=""):
         return "microchip,silicon,circuit"
     if any(w in title_lower for w in ['funding', 'capital', 'finance', 'ipo', 'valuation', 'invest', '融资', '投资', '估值', '独角兽', 'unicorn', '创业', '初创']):
         return "finance,chart,investment"
-    if any(w in title_lower for w in ['security', 'hacker', 'cookie stuffing', 'fraud', 'attack', 'leak', '安全', '黑客', '欺诈', '作弊', '窃取']):
+    if any(w in title_lower for w in ['security', 'hacker', 'fraud', 'attack', 'leak', '安全', '黑客', '锁屏']):
         return "cyber,security,shield,server"
-    if any(w in title_lower for w in ['space', 'rocket', 'satellite', '航天', '火箭', '卫星', '太空']):
-        return "rocket,space,satellite"
-    if any(w in title_lower for w in ['code', 'compiler', 'programming', 'zig', 'rust', 'python', 'php', '代码', '编译器', '程序员', '开发']):
-        return "code,programming,terminal"
 
-    # 默认分类兜底
-    if "Frontier Tech" in category_name:
-        return "technology,abstract"
-    elif "Unicorn" in category_name:
-        return "startup,office"
-    return "business,network"
+    return "artificial,intelligence,cyber"
 
 def extract_article_body(url):
     """流式下载 HTML 并解析出正文段落与头图"""
@@ -116,27 +107,21 @@ def download_image(url, slug_str):
     except Exception:
         return None
 
+
 class Command(BaseCommand):
-    help = 'Fetch full articles from tech sites, translate and summarize, and save as pending drafts'
+    help = 'Fetch full articles from AI RSS feeds, translate and summarize, and save as pending drafts under Artificial Intelligence category'
 
     def handle(self, *args, **options):
-        self.stdout.write('Initializing full-text tech articles synchronization scraper...')
+        self.stdout.write('Initializing full-text AI articles synchronization scraper...')
 
         feeds = [
             {
-                'url': 'https://techcrunch.com/category/startups/feed/',
-                'category': 'Unicorn Dynamics',
-                'name': 'TechCrunch Startups'
+                'url': 'https://techcrunch.com/category/artificial-intelligence/feed/',
+                'name': 'TechCrunch Artificial Intelligence'
             },
             {
-                'url': 'https://venturebeat.com/feed/',
-                'category': 'Frontier Tech',
+                'url': 'https://venturebeat.com/category/ai/feed/',
                 'name': 'VentureBeat AI'
-            },
-            {
-                'url': 'https://news.ycombinator.com/rss',
-                'category': 'VC/PE Insights',
-                'name': 'Hacker News'
             }
         ]
 
@@ -153,6 +138,12 @@ class Command(BaseCommand):
 
         total_scraped = 0
 
+        # 获取/创建 category
+        category_obj, _ = Category.objects.get_or_create(
+            name='Artificial Intelligence',
+            defaults={'slug': 'artificial-intelligence'}
+        )
+
         for feed in feeds:
             self.stdout.write(f"Scraping RSS feed: {feed['name']}...")
             try:
@@ -168,10 +159,6 @@ class Command(BaseCommand):
                 items = root.findall('.//item')[:15]
                 scraped_in_feed = 0
 
-                category_obj = Category.objects.filter(name=feed['category']).first()
-                if not category_obj:
-                    category_obj = Category.objects.first()
-
                 for item in items:
                     if scraped_in_feed >= 3:
                         break
@@ -183,7 +170,6 @@ class Command(BaseCommand):
 
                     # 判定文章是否已抓取过 (根据标题模糊去重)
                     title_clean = re.sub(r'[^a-zA-Z0-9]', '', title).lower()[:30]
-                    # 我们也可以根据 slug 进行校验
                     temp_slug = slugify(title[:100])
                     exists = Article.objects.filter(slug__icontains=temp_slug[:20]).exists()
                     if exists:
@@ -215,10 +201,10 @@ class Command(BaseCommand):
                     # 4. 头图配图下载
                     thumbnail_path = download_image(img_url, temp_slug)
 
-                    # 降级备用：如果文章内无图，用 loremflickr 根据标题和分类下载匹配的高清图片
+                    # 降级备用：如果文章内无图，用 loremflickr 下载匹配的高清科技感图片
                     if not thumbnail_path:
                         combined_title = f"{title} {translated_title}"
-                        keywords = get_optimized_keywords(combined_title, feed['category'])
+                        keywords = get_optimized_keywords(combined_title)
                         import time
                         lock_id = int(time.time() * 1000) % 999999
                         fallback_url = f"https://loremflickr.com/800/450/{keywords}?lock={lock_id}"
@@ -230,7 +216,7 @@ class Command(BaseCommand):
                     # 6. 保存为待审核草稿 (status = DRAFT)
                     Article.objects.create(
                         title=translated_title,
-                        slug=f"scraped-{temp_slug[:150]}-{timezone.now().strftime('%s')}",
+                        slug=f"scraped-ai-{temp_slug[:150]}-{timezone.now().strftime('%s')}",
                         summary=summary_text,
                         content=content_html,
                         thumbnail=thumbnail_path,
@@ -242,9 +228,9 @@ class Command(BaseCommand):
                     )
                     total_scraped += 1
                     scraped_in_feed += 1
-                    self.stdout.write(self.style.SUCCESS(f"    Successfully imported draft: {translated_title}"))
+                    self.stdout.write(self.style.SUCCESS(f"    Successfully imported AI draft: {translated_title}"))
 
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f"Error scraping {feed['name']}: {e}"))
 
-        self.stdout.write(self.style.SUCCESS(f"Scraper run complete. Scraped {total_scraped} new articles as drafts."))
+        self.stdout.write(self.style.SUCCESS(f"AI Scraper run complete. Scraped {total_scraped} new AI articles as drafts."))

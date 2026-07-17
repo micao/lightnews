@@ -52,6 +52,10 @@ sync-tech:
 sync-articles:
 	docker compose --env-file .env.dev exec web python manage.py sync_tech_articles
 
+# 自动抓取英文 AI 相关深度报道并高保真翻译，并自动配图生成待审草稿
+sync-ai-articles:
+	docker compose --env-file .env.dev exec web python manage.py sync_ai_articles
+
 # 运行后端 Django 单元与功能测试套件
 test:
 	docker compose --env-file .env.dev exec web python manage.py test

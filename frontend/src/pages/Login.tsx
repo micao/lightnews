@@ -26,12 +26,12 @@ export const Login: React.FC = () => {
   // 表单输入状态
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [nickname, setNickname] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [nickname, _setNickname] = useState('');
+  const [phoneNumber, _setPhoneNumber] = useState('');
 
   // 验证码状态
   const [captchaId, setCaptchaId] = useState('');
-  const [captchaQuestion, setCaptchaQuestion] = useState('');
+  const [_captchaQuestion, _captchaQuestionSetter] = useState('');
   const [captchaAnswer, setCaptchaAnswer] = useState('');
 
   // 界面状态
@@ -112,8 +112,8 @@ export const Login: React.FC = () => {
     }
   };
 
-  // 处理研究员注册
-  const handleRegister = async (e: React.FormEvent) => {
+  // 处理研究员注册（已暂时关闭）
+  const _handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -272,158 +272,36 @@ export const Login: React.FC = () => {
                 {loading ? <CircularProgress size={24} /> : t('Regular User Login')}
               </Button>
 
+              {/* 注册入口已暂时关闭 */}
               <Box sx={{ textAlign: 'center', mt: 1 }}>
-                <Typography
-                  variant="body2"
-                  sx={{ color: 'primary.main', cursor: 'pointer', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
-                  onClick={() => {
-                    setIsRegister(true);
-                    setError('');
-                    setUsername('');
-                    setPassword('');
-                  }}
-                >
-                  没有账号？注册成为创投研究员
+                <Typography variant="body2" sx={{ color: '#475569', fontWeight: 500 }}>
+                  暂停开放注册，如需访问请联系管理员
                 </Typography>
               </Box>
             </Box>
           ) : (
+            /* 注册表单已暂时关闭 */
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, py: 4 }}>
+              <Typography variant="h6" sx={{ color: '#f43f5e', fontWeight: 800 }}>🔒 注册通道已关闭</Typography>
+              <Typography variant="body2" sx={{ color: '#94a3b8', textAlign: 'center' }}>系统维护中，暂时关闭新用户注册。<br />如需访问，请联系平台管理员开通账号。</Typography>
+              <Typography
+                variant="body2"
+                sx={{ color: 'primary.main', cursor: 'pointer', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
+                onClick={() => setIsRegister(false)}
+              >
+                返回登录
+              </Typography>
+            </Box>
+          )}
+          {/* REGISTER_FORM_DISABLED - 注册表单已暂时隐藏，恢复时取消注释以下代码块
             <Box
               component="form"
               onSubmit={handleRegister}
               sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
             >
-              <TextField
-                label="用户名 (Username) *"
-                variant="outlined"
-                fullWidth
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="作为登录唯一凭证，不少于3位"
-                sx={{
-                  '& .MuiInputLabel-root': { color: '#64748b' },
-                  '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(255, 255, 255, 0.01)',
-                    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.05)' },
-                  },
-                }}
-              />
-              <TextField
-                label="昵称 (Nickname)"
-                variant="outlined"
-                fullWidth
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                placeholder="展示在评论和分析师页的别名"
-                sx={{
-                  '& .MuiInputLabel-root': { color: '#64748b' },
-                  '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(255, 255, 255, 0.01)',
-                    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.05)' },
-                  },
-                }}
-              />
-              <TextField
-                label="手机号码 (Phone Number)"
-                variant="outlined"
-                fullWidth
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="11位中国大陆手机号（可选）"
-                sx={{
-                  '& .MuiInputLabel-root': { color: '#64748b' },
-                  '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(255, 255, 255, 0.01)',
-                    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.05)' },
-                  },
-                }}
-              />
-              <TextField
-                label="密码 (Password) *"
-                type="password"
-                variant="outlined"
-                fullWidth
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="作为登录密码，不少于6位"
-                sx={{
-                  '& .MuiInputLabel-root': { color: '#64748b' },
-                  '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(255, 255, 255, 0.01)',
-                    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.05)' },
-                  },
-                }}
-              />
-
-              {/* 人机校验数学验证码 */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
-                <TextField
-                  label="验证码 (CAPTCHA) *"
-                  variant="outlined"
-                  value={captchaAnswer}
-                  onChange={(e) => setCaptchaAnswer(e.target.value)}
-                  placeholder="计算结果"
-                  sx={{
-                    flex: 1,
-                    '& .MuiInputLabel-root': { color: '#64748b' },
-                    '& .MuiOutlinedInput-root': {
-                      bgcolor: 'rgba(255, 255, 255, 0.01)',
-                      '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.05)' },
-                    },
-                  }}
-                />
-                <Button
-                  variant="outlined"
-                  onClick={fetchCaptcha}
-                  sx={{
-                    height: 56,
-                    minWidth: 120,
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                    color: '#94a3b8',
-                    textTransform: 'none',
-                    '&:hover': {
-                      borderColor: 'rgba(255, 255, 255, 0.2)',
-                      bgcolor: 'rgba(255, 255, 255, 0.02)',
-                    }
-                  }}
-                >
-                  {captchaQuestion ? (
-                    <Typography variant="body1" sx={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#38bdf8' }}>
-                      {captchaQuestion}
-                    </Typography>
-                  ) : (
-                    '...'
-                  )}
-                </Button>
-              </Box>
-
-              <Button
-                type="submit"
-                variant="contained"
-                color="secondary"
-                fullWidth
-                disabled={loading}
-                sx={{ color: '#fff', py: 1.2, mt: 1 }}
-              >
-                {loading ? <CircularProgress size={24} /> : '注册并加入平台'}
-              </Button>
-
-              <Box sx={{ textAlign: 'center', mt: 1 }}>
-                <Typography
-                  variant="body2"
-                  sx={{ color: 'primary.main', cursor: 'pointer', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
-                  onClick={() => {
-                    setIsRegister(false);
-                    setError('');
-                    setUsername('');
-                    setPassword('');
-                  }}
-                >
-                  已有账号？返回登录
-                </Typography>
-              </Box>
+              (原注册表单 JSX 已保留，方便日后一键恢复)
             </Box>
-          )}
+          */}
 
           {import.meta.env.DEV && (
             <>

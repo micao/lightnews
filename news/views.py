@@ -189,7 +189,7 @@ def seed_data_view(request):
     """一键填充创投数据 API (开发及测试环境专用)"""
     try:
         # 1. 创建分类
-        cats = ['Frontier Tech', 'Unicorn Dynamics', 'VC/PE Insights']
+        cats = ['Frontier Tech', 'Unicorn Dynamics', 'VC/PE Insights', 'Artificial Intelligence']
         cat_objs = {}
         for c in cats:
             slug_val = c.lower().replace(' ', '-').replace('/', '-')
@@ -248,7 +248,7 @@ def seed_data_view(request):
             {
                 'title': '【中东资本观察】主权财富基金2026年直投重心全面转向AI与新材料',
                 'slug': 'mideast-sovereign-wealth-funds-direct-investment-trends',
-                'summary': '阿布扎比投资局与沙特PIF近期密集宣布在华设立硬科技直投办公室。生成式人工智能与新型固态电池研发商成为其高额领投的最热标的。',
+                'summary': '阿布扎比投资局与沙特PIF近期宣布在华设立硬科技直投办公室。生成式人工智能与新型固态电池研发商成为其高额领投的最热标的。',
                 'content': '随着全球传统能源转型加剧，中东主权财富基金正在以惊人的速度推进其资本结构调整。过去单纯依靠跟投欧美大型PE的方式，正逐步转变为在重点市场设立本土投资团队直接挑选“中国硬科技独角兽”进行直投。中东资本雄厚的财力配比与超长的资金周期，几乎成了当前硬科技创投寒冬里各大初创项目竞相争取的“源头活水”。',
                 'category': cat_objs['VC/PE Insights'],
                 'author': author_user,
@@ -256,6 +256,30 @@ def seed_data_view(request):
                 'views_count': 27800,
                 'likes_count': 670,
                 'comments_count': 0
+            },
+            {
+                'title': '【AI前沿】DeepSeek-V3大模型全面解析：千亿参数背后的混合专家架构与低成本落地',
+                'slug': 'deepseek-v3-moe-architecture-and-cost-analysis',
+                'summary': 'DeepSeek再次以极高性价比震撼大模型业界。本篇深度剖析其多代币预测 (MTP) 技术、自适应MoE路由算法，以及如何在低显存环境下实现千亿参数级的高效推理。',
+                'content': '大语言模型在2026年的主要竞逐方向正在向低运算能耗与高实用化迁移。DeepSeek-V3通过重构混合专家 (MoE) 架构的门控权重，有效降低了冗余计算块的激活概率，使得推理的每百万Token边际成本大幅下降。同时，在跨节点通信网络中设计的高效重叠技术，使得百亿集群能够平滑协作，展现出比肩国际一线千亿级模型的性能水平。',
+                'category': cat_objs['Artificial Intelligence'],
+                'author': author_user,
+                'is_vip_only': False,
+                'views_count': 58200,
+                'likes_count': 1840,
+                'comments_count': 3
+            },
+            {
+                'title': '【独家深度】OpenAI“星门计划”全景透视：全球最大AI超算中心的算力、电力与地缘博弈',
+                'slug': 'openai-stargate-supercomputer-project-insight',
+                'summary': '十万块GPU、百万千瓦级核电配比以及千亿美元资金储备，这一宏大蓝图正重塑全球大模型基础设施版图，面临芯片禁运和电力短缺的双重挑战。',
+                'content': '随着多模态大模型从单纯的文字交互演进为能够自我规划、调用工具的通用AI代理，训练算力需求再次提升了数个数量级。星门（Stargate）超算中心的设计不仅仅是服务器机架的堆叠，更是对超导输电技术、液冷模块和分布式一致性哈希存储的全面大考。根据行业透露，该项目的落地可能促成核能发电厂商与大模型算力方的深度重组，这标志着算力竞争正式升级为基础能源 of 博弈。',
+                'category': cat_objs['Artificial Intelligence'],
+                'author': author_user,
+                'is_vip_only': True,
+                'views_count': 49000,
+                'likes_count': 1360,
+                'comments_count': 1
             }
         ]
 

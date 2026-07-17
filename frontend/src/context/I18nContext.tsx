@@ -9,6 +9,8 @@ const ZH_TRANSLATIONS: Record<string, string> = {
   'Frontier Tech': '前沿科技',
   'Unicorn Dynamics': '独角兽动态',
   'VC/PE Insights': 'VC/PE观察',
+  'AI Zone': 'AI专区',
+  'Artificial Intelligence': '人工智能',
   'Search': '搜索',
   'Login': '登录',
   'Logout': '注销登录',
