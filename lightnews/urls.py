@@ -21,6 +21,7 @@ from news.views import (
     admin_livenews_list_view,
     article_detail_view,
     article_list_view,
+    category_list_view,
     live_news_list_view,
     seed_data_view,
 )
@@ -55,6 +56,7 @@ urlpatterns = [
     # 新闻与快讯
     path('api/articles/', article_list_view, name='article_list_view'),
     path('api/articles/<slug:slug>/', article_detail_view, name='article_detail_view'),
+    path('api/categories/', category_list_view, name='category_list_view'),
     path('api/livenews/', live_news_list_view, name='live_news_list_view'),
     path('api/seed/', seed_data_view, name='seed_data_view'),
 
