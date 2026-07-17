@@ -29,7 +29,7 @@ class UsersAuthTests(TestCase):
         )
 
     def test_register_success(self):
-        """测试用户成功自注册"""
+        """注册功能已暂时关闭，应返回 403 维护提示"""
         captcha = Captcha.objects.create(answer='12')
         payload = {
             'username': 'new_researcher',
@@ -44,20 +44,16 @@ class UsersAuthTests(TestCase):
             data=json.dumps(payload),
             content_type='application/json'
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 403)
         data = response.json()
-        self.assertTrue(data['success'])
-        self.assertIn('token', data)
-        self.assertEqual(data['user']['username'], 'new_researcher')
-        self.assertEqual(data['user']['phone_number'], '13900139000')
+        self.assertFalse(data['success'])
+        self.assertIn('系统维护中，暂时关闭新用户注册。', data['message'])
 
-        # 验证数据库中用户与资料是否正确落库
-        new_user = User.objects.get(username='new_researcher')
-        self.assertTrue(new_user.check_password('secure_password_999'))
-        self.assertEqual(new_user.profile.nickname, '前沿追风人')
+        # 验证数据库中确实未创建任何新用户
+        self.assertFalse(User.objects.filter(username='new_researcher').exists())
 
     def test_register_duplicate_username(self):
-        """测试使用已存在用户名注册失败"""
+        """注册已关闭，应返回 403 而非 400"""
         captcha = Captcha.objects.create(answer='15')
         payload = {
             'username': 'test_user',
@@ -70,18 +66,18 @@ class UsersAuthTests(TestCase):
             data=json.dumps(payload),
             content_type='application/json'
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 403)
         data = response.json()
         self.assertFalse(data['success'])
-        self.assertIn('用户名已存在', data['message'])
+        self.assertIn('系统维护中，暂时关闭新用户注册。', data['message'])
 
     def test_register_duplicate_phone(self):
-        """测试使用已被绑定的手机号注册失败"""
+        """注册已关闭，应返回 403 而非 400"""
         captcha = Captcha.objects.create(answer='18')
         payload = {
             'username': 'unique_user',
             'password': 'password123',
-            'phone_number': '13800138000', # 与 setUp 中的手机号重复
+            'phone_number': '13800138000',
             'captcha_id': str(captcha.id),
             'captcha_answer': '18'
         }
@@ -90,10 +86,10 @@ class UsersAuthTests(TestCase):
             data=json.dumps(payload),
             content_type='application/json'
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 403)
         data = response.json()
         self.assertFalse(data['success'])
-        self.assertIn('手机号已被绑定', data['message'])
+        self.assertIn('系统维护中，暂时关闭新用户注册。', data['message'])
 
     def test_login_strict_success(self):
         """测试常规用户使用正确密码登录成功"""
@@ -233,13 +229,15 @@ class UsersAuthTests(TestCase):
             data=json.dumps(payload),
             content_type='application/json'
         )
-        self.assertEqual(response.status_code, 400)
+        # self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 403)
         data = response.json()
         self.assertFalse(data['success'])
-        self.assertIn('验证码错误', data['message'])
+        # self.assertIn('验证码错误', data['message'])
+        self.assertIn('系统维护中，暂时关闭新用户注册。', data['message'])
 
     def test_registration_with_correct_captcha_success(self):
-        """测试正确的验证码可以成功注册"""
+        """注册已关闭，即使验证码正确也应返回 403"""
         captcha = Captcha.objects.create(answer='8')
 
         payload = {
@@ -253,10 +251,11 @@ class UsersAuthTests(TestCase):
             data=json.dumps(payload),
             content_type='application/json'
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 403)
         data = response.json()
-        self.assertTrue(data['success'])
-        self.assertIn('token', data)
+        self.assertFalse(data['success'])
+        self.assertIn('系统维护中，暂时关闭新用户注册。', data['message'])
+        self.assertFalse(User.objects.filter(username='new_user_success').exists())
 
     def test_apply_writer_and_admin_approval(self):
         """测试申请写作者以及管理员审核的完整生命周期"""
