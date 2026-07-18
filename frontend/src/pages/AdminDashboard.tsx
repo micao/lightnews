@@ -14,6 +14,7 @@ import {
   Paper,
   Button,
   Pagination,
+  Skeleton,
   IconButton,
   Chip,
   Grid,
@@ -45,8 +46,8 @@ import { MetricChart } from '../components/MetricChart';
 import { type Article } from '../types';
 import { API_BASE } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
-import { CKEditor } from '@ckeditor/ckeditor5-react';
-import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import { EditorJSComponent } from '../components/EditorJSComponent';
+import { htmlToBlocks, blocksToHtml, type EditorBlock } from '../utils/editorHtmlConverter';
 
 export const AdminDashboard: React.FC = () => {
   const { t } = useI18n();
@@ -54,6 +55,7 @@ export const AdminDashboard: React.FC = () => {
   const [articles, setArticles] = useState<Article[]>([]);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [loadingArticles, setLoadingArticles] = useState(true);
   const itemsPerPage = 10;
   const navigate = useNavigate();
 
@@ -77,7 +79,7 @@ export const AdminDashboard: React.FC = () => {
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editSummary, setEditSummary] = useState('');
-  const [editContent, setEditContent] = useState('');
+  const [editContent, setEditContent] = useState<EditorBlock[]>([]);
   const [editStatus, setEditStatus] = useState('draft');
   const [editIsVip, setEditIsVip] = useState(false);
   const [editAllowComments, setEditAllowComments] = useState(false);
@@ -92,7 +94,7 @@ export const AdminDashboard: React.FC = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createTitle, setCreateTitle] = useState('');
   const [createSummary, setCreateSummary] = useState('');
-  const [createContent, setCreateContent] = useState('');
+  const [createContent, setCreateContent] = useState<EditorBlock[]>([]);
   const [createCategoryId, setCreateCategoryId] = useState<number>(1);
   const [createStatus, setCreateStatus] = useState('draft');
   const [createIsVip, setCreateIsVip] = useState(false);
@@ -175,8 +177,8 @@ export const AdminDashboard: React.FC = () => {
     { label: t('Console'), value: 19 },
   ];
 
-  // 拉取后端文章列表
   const fetchArticles = async () => {
+    setLoadingArticles(true);
     try {
       const token = localStorage.getItem('lightnews_token');
       const headers: HeadersInit = {};
@@ -191,6 +193,8 @@ export const AdminDashboard: React.FC = () => {
       }
     } catch (err) {
       console.error('Fetch admin articles error:', err);
+    } finally {
+      setLoadingArticles(false);
     }
   };
 
@@ -341,8 +345,8 @@ export const AdminDashboard: React.FC = () => {
     setEditingArticle(article);
     setEditTitle(article.title);
     setEditSummary(article.summary);
-    // CKEditor 支持富文本，直接载入 HTML 正文
-    setEditContent(article.content);
+    // 将 HTML 正文还原为 Editor.js 兼容的 Blocks 结构
+    setEditContent(htmlToBlocks(article.content));
     setEditStatus(article.status || 'published');
     setEditIsVip(article.is_vip_only);
     setEditAllowComments(!!article.allow_comments);
@@ -387,8 +391,8 @@ export const AdminDashboard: React.FC = () => {
   const handleEditSave = async () => {
     if (!editingArticle) return;
     setEditSaving(true);
-    // CKEditor 产生的就是标准的 HTML 段落，直接使用
-    const formattedContent = editContent;
+    // 将 Editor.js Blocks 序列化为标准的 HTML 字符串存盘
+    const formattedContent = blocksToHtml(editContent);
 
     try {
       const token = localStorage.getItem('lightnews_token');
@@ -427,14 +431,14 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const handleCreateSave = async () => {
-    if (!createTitle.trim() || !createContent.trim()) {
+    if (!createTitle.trim() || createContent.length === 0) {
       setSnackbarMsg('标题和正文不能为空');
       setSnackbarOpen(true);
       return;
     }
     setCreateSaving(true);
-    // CKEditor 产生的就是标准的 HTML 段落，直接使用
-    const formattedContent = createContent;
+    // 将 Editor.js Blocks 序列化为标准的 HTML 字符串存盘
+    const formattedContent = blocksToHtml(createContent);
 
     try {
       const token = localStorage.getItem('lightnews_token');
@@ -463,7 +467,7 @@ export const AdminDashboard: React.FC = () => {
         // 重置新建状态
         setCreateTitle('');
         setCreateSummary('');
-        setCreateContent('');
+        setCreateContent([]);
         setCreateStatus('draft');
         setCreateIsVip(false);
         setCreateAllowComments(false);
@@ -625,53 +629,78 @@ export const AdminDashboard: React.FC = () => {
               <Table sx={{ minWidth: 650 }}>
                 <TableHead sx={{ '& th': { borderBottom: '1px solid rgba(255, 255, 255, 0.05)', color: '#64748b', fontWeight: 700 } }}>
                   <TableRow>
-                    <TableCell>{t('Article Title')}</TableCell>
-                    <TableCell>{t('Category')}</TableCell>
-                    <TableCell align="right">{t('Views')}</TableCell>
-                    <TableCell align="right">{t('Likes')}</TableCell>
-                    <TableCell>{t('VIP Type')}</TableCell>
-                    <TableCell>{t('Publish Time')}</TableCell>
-                    <TableCell align="center">{t('Action')}</TableCell>
+                    <TableCell sx={{ width: '35%' }}>{t('Article Title')}</TableCell>
+                    <TableCell sx={{ width: '12%' }}>{t('Category')}</TableCell>
+                    <TableCell align="right" sx={{ width: '10%' }}>{t('Views')}</TableCell>
+                    <TableCell align="right" sx={{ width: '10%' }}>{t('Likes')}</TableCell>
+                    <TableCell sx={{ width: '12%' }}>{t('VIP Type')}</TableCell>
+                    <TableCell sx={{ width: '11%' }}>{t('Publish Time')}</TableCell>
+                    <TableCell align="center" sx={{ width: '10%' }}>{t('Action')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody sx={{ '& td': { borderBottom: '1px solid rgba(255, 255, 255, 0.04)', color: '#cbd5e1' } }}>
-                  {articles.map((art) => (
-                    <TableRow key={art.id} sx={{ '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.01)' } }}>
-                      <TableCell sx={{ fontWeight: 600 }}>{art.title}</TableCell>
-                      <TableCell>
-                        <Chip label={t(art.category.name)} size="small" sx={{ bgcolor: 'rgba(255, 255, 255, 0.04)', color: '#94a3b8' }} />
-                      </TableCell>
-                      <TableCell align="right" sx={{ fontFamily: 'monospace' }}>
-                        {art.views_count.toLocaleString()}
-                      </TableCell>
-                      <TableCell align="right" sx={{ fontFamily: 'monospace' }}>
-                        {art.likes_count}
-                      </TableCell>
-                      <TableCell>
-                        {art.is_vip_only ? (
-                          <Chip
-                            icon={<StarIcon style={{ color: '#000', fontSize: 12 }} />}
-                            label={t('Exclusive')}
-                            size="small"
-                            sx={{ bgcolor: 'secondary.main', color: '#000', fontWeight: 700 }}
-                          />
-                        ) : (
-                          <Chip label={t('Free')} size="small" variant="outlined" sx={{ color: '#64748b', borderColor: '#475569' }} />
-                        )}
-                      </TableCell>
-                      <TableCell>{art.publish_at.split(' ')[0]}</TableCell>
-                      <TableCell align="center">
-                        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
-                          <IconButton size="small" color="primary" onClick={() => handleEditClick(art)}>
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                          <IconButton size="small" color="error" onClick={() => handleDeleteClick(art.id)}>
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Box>
+                  {loadingArticles ? (
+                    Array.from(new Array(itemsPerPage)).map((_, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell><Skeleton variant="text" width="70%" height={24} sx={{ bgcolor: 'rgba(255,255,255,0.04)' }} /></TableCell>
+                        <TableCell><Skeleton variant="text" width="40%" height={24} sx={{ bgcolor: 'rgba(255,255,255,0.04)' }} /></TableCell>
+                        <TableCell align="right"><Skeleton variant="text" width="30%" height={24} sx={{ bgcolor: 'rgba(255,255,255,0.04)', ml: 'auto' }} /></TableCell>
+                        <TableCell align="right"><Skeleton variant="text" width="30%" height={24} sx={{ bgcolor: 'rgba(255,255,255,0.04)', ml: 'auto' }} /></TableCell>
+                        <TableCell><Skeleton variant="text" width="50%" height={24} sx={{ bgcolor: 'rgba(255,255,255,0.04)' }} /></TableCell>
+                        <TableCell><Skeleton variant="text" width="60%" height={24} sx={{ bgcolor: 'rgba(255,255,255,0.04)' }} /></TableCell>
+                        <TableCell align="center">
+                          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                            <Skeleton variant="circular" width={28} height={28} sx={{ bgcolor: 'rgba(255,255,255,0.04)' }} />
+                            <Skeleton variant="circular" width={28} height={28} sx={{ bgcolor: 'rgba(255,255,255,0.04)' }} />
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : articles.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center" sx={{ py: 6, color: '#64748b' }}>
+                        {t('No articles found')}
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    articles.map((art) => (
+                      <TableRow key={art.id} sx={{ '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.01)' } }}>
+                        <TableCell sx={{ fontWeight: 600 }}>{art.title}</TableCell>
+                        <TableCell>
+                          <Chip label={t(art.category.name)} size="small" sx={{ bgcolor: 'rgba(255, 255, 255, 0.04)', color: '#94a3b8' }} />
+                        </TableCell>
+                        <TableCell align="right" sx={{ fontFamily: 'monospace' }}>
+                          {art.views_count.toLocaleString()}
+                        </TableCell>
+                        <TableCell align="right" sx={{ fontFamily: 'monospace' }}>
+                          {art.likes_count}
+                        </TableCell>
+                        <TableCell>
+                          {art.is_vip_only ? (
+                            <Chip
+                              icon={<StarIcon style={{ color: '#000', fontSize: 12 }} />}
+                              label={t('Exclusive')}
+                              size="small"
+                              sx={{ bgcolor: 'secondary.main', color: '#000', fontWeight: 700 }}
+                            />
+                          ) : (
+                            <Chip label={t('Free')} size="small" variant="outlined" sx={{ color: '#64748b', borderColor: '#475569' }} />
+                          )}
+                        </TableCell>
+                        <TableCell>{art.publish_at.split(' ')[0]}</TableCell>
+                        <TableCell align="center">
+                          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                            <IconButton size="small" color="primary" onClick={() => handleEditClick(art)}>
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton size="small" color="error" onClick={() => handleDeleteClick(art.id)}>
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -731,11 +760,11 @@ export const AdminDashboard: React.FC = () => {
               <Table sx={{ minWidth: 650 }}>
                 <TableHead sx={{ '& th': { borderBottom: '1px solid rgba(255, 255, 255, 0.05)', color: '#64748b', fontWeight: 700 } }}>
                   <TableRow>
-                    <TableCell>{t('Moderation User')}</TableCell>
-                    <TableCell>{t('Belongs Article')}</TableCell>
-                    <TableCell>{t('Comment Content')}</TableCell>
-                    <TableCell>{t('Publish Time')}</TableCell>
-                    <TableCell align="center">{t('Action')}</TableCell>
+                    <TableCell sx={{ width: '15%' }}>{t('Moderation User')}</TableCell>
+                    <TableCell sx={{ width: '30%' }}>{t('Belongs Article')}</TableCell>
+                    <TableCell sx={{ width: '35%' }}>{t('Comment Content')}</TableCell>
+                    <TableCell sx={{ width: '12%' }}>{t('Publish Time')}</TableCell>
+                    <TableCell align="center" sx={{ width: '8%' }}>{t('Action')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody sx={{ '& td': { borderBottom: '1px solid rgba(255, 255, 255, 0.04)', color: '#cbd5e1' } }}>
@@ -970,10 +999,10 @@ export const AdminDashboard: React.FC = () => {
               <Table sx={{ minWidth: 650 }}>
                 <TableHead sx={{ '& th': { borderBottom: '1px solid rgba(255, 255, 255, 0.05)', color: '#64748b', fontWeight: 700 } }}>
                   <TableRow>
-                    <TableCell>用户名 (Username)</TableCell>
-                    <TableCell>昵称 (Nickname)</TableCell>
-                    <TableCell>资质说明 (Credentials)</TableCell>
-                    <TableCell align="center">动作 (Action)</TableCell>
+                    <TableCell sx={{ width: '20%' }}>用户名 (Username)</TableCell>
+                    <TableCell sx={{ width: '20%' }}>昵称 (Nickname)</TableCell>
+                    <TableCell sx={{ width: '45%' }}>资质说明 (Credentials)</TableCell>
+                    <TableCell align="center" sx={{ width: '15%' }}>动作 (Action)</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody sx={{ '& td': { borderBottom: '1px solid rgba(255, 255, 255, 0.04)', color: '#cbd5e1' } }}>
@@ -1091,6 +1120,7 @@ export const AdminDashboard: React.FC = () => {
           </Button>
 
           <TextField
+            autoFocus
             fullWidth
             label={t('Article Title')}
             value={editTitle}
@@ -1142,13 +1172,10 @@ export const AdminDashboard: React.FC = () => {
             <Typography variant="body2" sx={{ color: '#64748b', mb: 1, fontSize: '0.75rem' }}>
               {t('Content')}
             </Typography>
-            <CKEditor
-              editor={ClassicEditor}
+            <EditorJSComponent
+              holder="editorjs-edit"
               data={editContent}
-              onChange={(_event: any, editor: any) => {
-                const data = editor.getData();
-                setEditContent(data);
-              }}
+              onChange={(blocks) => setEditContent(blocks)}
             />
           </Box>
           {/* 相关文章关联智能搜索与展示 */}
@@ -1319,6 +1346,7 @@ export const AdminDashboard: React.FC = () => {
         </DialogTitle>
         <DialogContent sx={{ mt: 2 }}>
           <TextField
+            autoFocus
             fullWidth
             label={t('Article Title')}
             value={createTitle}
@@ -1370,13 +1398,10 @@ export const AdminDashboard: React.FC = () => {
             <Typography variant="body2" sx={{ color: '#64748b', mb: 1, fontSize: '0.75rem' }}>
               {t('Content')}
             </Typography>
-            <CKEditor
-              editor={ClassicEditor}
+            <EditorJSComponent
+              holder="editorjs-create"
               data={createContent}
-              onChange={(_event: any, editor: any) => {
-                const data = editor.getData();
-                setCreateContent(data);
-              }}
+              onChange={(blocks) => setCreateContent(blocks)}
             />
           </Box>
 

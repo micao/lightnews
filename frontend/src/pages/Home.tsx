@@ -33,7 +33,7 @@ export const Home: React.FC = () => {
   // 无限滚动状态
   const [displayedArticles, setDisplayedArticles] = useState<Article[]>([]);
   const [page, setPage] = useState(1);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const observerRef = useRef<HTMLDivElement | null>(null);
 
@@ -45,6 +45,7 @@ export const Home: React.FC = () => {
     try {
       if (isReset) {
         setLoadingMore(true);
+        setDisplayedArticles([]); // Clear articles to trigger skeleton loading immediately and keep layout consistent
       }
       const token = localStorage.getItem('lightnews_token');
       const headers: HeadersInit = {};
@@ -149,7 +150,32 @@ export const Home: React.FC = () => {
           {activeTab === 0 && (
             loadingMore && displayedArticles.length === 0 ? (
               <Card sx={{ mb: 4, bgcolor: '#101726' }}>
-                <Skeleton variant="rectangular" height={260} animation="wave" sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+                <Box
+                  sx={{
+                    height: 260,
+                    background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 16,
+                      left: 16,
+                      display: 'flex',
+                      gap: 1,
+                      zIndex: 2,
+                    }}
+                  >
+                    <Chip label={t('Deep Research')} color="primary" size="small" sx={{ fontWeight: 700 }} />
+                  </Box>
+                  <Typography variant="h3" sx={{ color: '#fff', textAlign: 'center', px: 4, fontWeight: 900, zIndex: 2, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+                    {t('LIGHT IN THE BRAIN')}
+                  </Typography>
+                </Box>
                 <CardContent sx={{ p: 3 }}>
                   <Skeleton variant="text" width="60%" height={32} sx={{ mb: 1.5, bgcolor: 'rgba(255,255,255,0.06)' }} />
                   <Skeleton variant="text" width="90%" height={20} sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
@@ -277,7 +303,7 @@ export const Home: React.FC = () => {
           {/* 新闻文章流列表 */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             {loadingMore && displayedArticles.length === 0 ? (
-              Array.from(new Array(3)).map((_, idx) => (
+              Array.from(new Array(activeTab === 0 ? 2 : 3)).map((_, idx) => (
                 <Card key={idx} sx={{ bgcolor: '#101726' }}>
                   <Grid container>
                     <Grid size={{ xs: 12, sm: 4 }} sx={{ display: 'flex', alignItems: 'stretch', overflow: 'hidden', borderRadius: '10px 0 0 10px' }}>
