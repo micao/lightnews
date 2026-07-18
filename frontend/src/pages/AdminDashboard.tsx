@@ -99,6 +99,27 @@ export const AdminDashboard: React.FC = () => {
   const [createRelatedArticles, setCreateRelatedArticles] = useState<Article[]>([]);
   const [createSaving, setCreateSaving] = useState(false);
 
+  // 动态获取分类列表
+  const [categoriesList, setCategoriesList] = useState<{ id: number; name: string; slug: string }[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/categories/`);
+        const data = await res.json();
+        if (data.success && data.categories) {
+          setCategoriesList(data.categories);
+          if (data.categories.length > 0) {
+            setCreateCategoryId(data.categories[0].id);
+          }
+        }
+      } catch (err) {
+        console.error('Fetch categories error:', err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
   // 关联文章搜索检索状态
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Article[]>([]);
@@ -1220,9 +1241,11 @@ export const AdminDashboard: React.FC = () => {
                     '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#475569' },
                   }}
                 >
-                  <MenuItem value={1}>{t('Frontier Tech')}</MenuItem>
-                  <MenuItem value={2}>{t('Unicorn Dynamics')}</MenuItem>
-                  <MenuItem value={3}>{t('VC/PE Insights')}</MenuItem>
+                  {categoriesList.map((cat) => (
+                    <MenuItem key={cat.id} value={cat.id}>
+                      {t(cat.name)}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Grid>
@@ -1451,9 +1474,11 @@ export const AdminDashboard: React.FC = () => {
                     '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#475569' },
                   }}
                 >
-                  <MenuItem value={1}>{t('Frontier Tech')}</MenuItem>
-                  <MenuItem value={2}>{t('Unicorn Dynamics')}</MenuItem>
-                  <MenuItem value={3}>{t('VC/PE Insights')}</MenuItem>
+                  {categoriesList.map((cat) => (
+                    <MenuItem key={cat.id} value={cat.id}>
+                      {t(cat.name)}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Grid>

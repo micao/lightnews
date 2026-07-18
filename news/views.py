@@ -139,6 +139,18 @@ def article_list_view(request):
         'has_more': end < total_count
     })
 
+def category_list_view(request):
+    categories = Category.objects.all()
+    serialized = [{
+        'id': cat.id,
+        'name': cat.name,
+        'slug': cat.slug
+    } for cat in categories]
+    return JsonResponse({
+        'success': True,
+        'categories': serialized
+    })
+
 def article_detail_view(request, slug):
     try:
         article = Article.objects.select_related('category', 'author', 'author__profile').get(slug=slug)
