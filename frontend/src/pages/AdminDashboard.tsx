@@ -45,6 +45,8 @@ import { MetricChart } from '../components/MetricChart';
 import { type Article } from '../types';
 import { API_BASE } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 
 export const AdminDashboard: React.FC = () => {
   const { t } = useI18n();
@@ -339,12 +341,8 @@ export const AdminDashboard: React.FC = () => {
     setEditingArticle(article);
     setEditTitle(article.title);
     setEditSummary(article.summary);
-    // 将 HTML 段落转换为纯文本的新行，使后台编辑更干净
-    const plainTextContent = article.content
-      .replace(/<\/p>\s*<p>/gi, '\n\n')
-      .replace(/<p>/gi, '')
-      .replace(/<\/p>/gi, '');
-    setEditContent(plainTextContent);
+    // CKEditor 支持富文本，直接载入 HTML 正文
+    setEditContent(article.content);
     setEditStatus(article.status || 'published');
     setEditIsVip(article.is_vip_only);
     setEditAllowComments(!!article.allow_comments);
@@ -389,12 +387,8 @@ export const AdminDashboard: React.FC = () => {
   const handleEditSave = async () => {
     if (!editingArticle) return;
     setEditSaving(true);
-    // 将每一行重新包装为 HTML 段落
-    const formattedContent = editContent
-      .split(/\n+/)
-      .filter((p) => p.trim() !== '')
-      .map((p) => `<p>${p.trim()}</p>`)
-      .join('');
+    // CKEditor 产生的就是标准的 HTML 段落，直接使用
+    const formattedContent = editContent;
 
     try {
       const token = localStorage.getItem('lightnews_token');
@@ -439,11 +433,8 @@ export const AdminDashboard: React.FC = () => {
       return;
     }
     setCreateSaving(true);
-    const formattedContent = createContent
-      .split(/\n+/)
-      .filter((p) => p.trim() !== '')
-      .map((p) => `<p>${p.trim()}</p>`)
-      .join('');
+    // CKEditor 产生的就是标准的 HTML 段落，直接使用
+    const formattedContent = createContent;
 
     try {
       const token = localStorage.getItem('lightnews_token');
@@ -1147,23 +1138,19 @@ export const AdminDashboard: React.FC = () => {
               },
             }}
           />
-          <TextField
-            fullWidth
-            label={t('Content')}
-            multiline
-            rows={8}
-            value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
-            sx={{
-              mb: 2.5,
-              '& .MuiInputLabel-root': { color: '#64748b' },
-              '& .MuiOutlinedInput-root': {
-                color: '#f8fafc',
-                '& fieldset': { borderColor: '#334155' },
-                '&:hover fieldset': { borderColor: '#475569' },
-              },
-            }}
-          />
+          <Box sx={{ mb: 2.5 }}>
+            <Typography variant="body2" sx={{ color: '#64748b', mb: 1, fontSize: '0.75rem' }}>
+              {t('Content')}
+            </Typography>
+            <CKEditor
+              editor={ClassicEditor}
+              data={editContent}
+              onChange={(_event: any, editor: any) => {
+                const data = editor.getData();
+                setEditContent(data);
+              }}
+            />
+          </Box>
           {/* 相关文章关联智能搜索与展示 */}
           <Typography variant="subtitle2" sx={{ color: '#cbd5e1', mb: 1, fontWeight: 700 }}>
             {t('Related Articles')}
@@ -1379,24 +1366,19 @@ export const AdminDashboard: React.FC = () => {
               },
             }}
           />
-          <TextField
-            fullWidth
-            label={t('Content')}
-            multiline
-            rows={8}
-            value={createContent}
-            onChange={(e) => setCreateContent(e.target.value)}
-            placeholder="使用回车分段..."
-            sx={{
-              mb: 2.5,
-              '& .MuiInputLabel-root': { color: '#64748b' },
-              '& .MuiOutlinedInput-root': {
-                color: '#f8fafc',
-                '& fieldset': { borderColor: '#334155' },
-                '&:hover fieldset': { borderColor: '#475569' },
-              },
-            }}
-          />
+          <Box sx={{ mb: 2.5 }}>
+            <Typography variant="body2" sx={{ color: '#64748b', mb: 1, fontSize: '0.75rem' }}>
+              {t('Content')}
+            </Typography>
+            <CKEditor
+              editor={ClassicEditor}
+              data={createContent}
+              onChange={(_event: any, editor: any) => {
+                const data = editor.getData();
+                setCreateContent(data);
+              }}
+            />
+          </Box>
 
           {/* 相关文章关联智能搜索与展示 */}
           <Typography variant="subtitle2" sx={{ color: '#cbd5e1', mb: 1, fontWeight: 700 }}>
