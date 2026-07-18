@@ -34,3 +34,25 @@ html, body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 179, 0, 0.4);
 }
+
+/* Custom styles for vanilla-cookieconsent dark theme */
+#cc-main {
+  --cc-bg: #101726;
+  --cc-primary-color: #f8fafc;
+  --cc-secondary-color: #94a3b8;
+  --cc-btn-primary-bg: #0066ff;
+  --cc-btn-primary-color: #ffffff;
+  --cc-btn-primary-hover-bg: #0052cc;
+  --cc-btn-secondary-bg: rgba(255, 255, 255, 0.05);
+  --cc-btn-secondary-color: #f8fafc;
+  --cc-btn-secondary-hover-bg: rgba(255, 255, 255, 0.1);
+  --cc-cookie-category-block-bg: #080c14;
+  --cc-cookie-category-block-border: rgba(255, 255, 255, 0.05);
+  --cc-toggle-on-bg: #10b981;
+  --cc-toggle-off-bg: #334155;
+  --cc-toggle-on-knob-bg: #ffffff;
+  --cc-toggle-off-knob-bg: #94a3b8;
+  --cc-modal-border-color: rgba(255, 255, 255, 0.08);
+  font-family: "Outfit", "Inter", sans-serif !important;
+}
+

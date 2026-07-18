@@ -14,6 +14,7 @@ import { Profile } from './pages/Profile';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AdminRoute } from './components/AdminRoute';
 import { MarketTicker } from './components/MarketTicker';
+import { CookieConsentComponent } from './components/CookieConsentComponent';
 
 const AppNavigation: React.FC = () => {
   const { user } = useAuth();
@@ -194,6 +195,7 @@ export const App: React.FC = () => {
         <AuthProvider>
           <Router>
             <AppContent />
+            <CookieConsentComponent />
           </Router>
         </AuthProvider>
       </ThemeProvider>
