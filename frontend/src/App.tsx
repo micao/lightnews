@@ -6,12 +6,12 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { theme } from './theme';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { I18nProvider, useI18n } from './context/I18nContext';
-import { Home } from './pages/Home';
-import { AiHome } from './pages/AiHome';
-import { ArticleDetail } from './pages/ArticleDetail';
-import { Login } from './pages/Login';
-import { Profile } from './pages/Profile';
-import { AdminDashboard } from './pages/AdminDashboard';
+const Home = React.lazy(() => import('./pages/Home').then((m) => ({ default: m.Home })));
+const AiHome = React.lazy(() => import('./pages/AiHome').then((m) => ({ default: m.AiHome })));
+const ArticleDetail = React.lazy(() => import('./pages/ArticleDetail').then((m) => ({ default: m.ArticleDetail })));
+const Login = React.lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })));
+const Profile = React.lazy(() => import('./pages/Profile').then((m) => ({ default: m.Profile })));
+const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
 import { AdminRoute } from './components/AdminRoute';
 import { MarketTicker } from './components/MarketTicker';
 import { CookieConsentComponent } from './components/CookieConsentComponent';
@@ -155,21 +155,23 @@ export const AppContent: React.FC = () => {
       <AppNavigation />
       
       <Box sx={{ flexGrow: 1 }}>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/ai" element={<AiHome />} />
-          <Route path="/article/:slug" element={<ArticleDetail />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route
-            path="/admin-dashboard"
-            element={
-              <AdminRoute>
-                <AdminDashboard />
-              </AdminRoute>
-            }
-          />
-        </Routes>
+        <React.Suspense fallback={<Box sx={{ minHeight: '60vh', bgcolor: '#080c14' }} />}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/ai" element={<AiHome />} />
+            <Route path="/article/:slug" element={<ArticleDetail />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route
+              path="/admin-dashboard"
+              element={
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
+              }
+            />
+          </Routes>
+        </React.Suspense>
       </Box>
 
       {/* 页脚 */}

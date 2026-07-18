@@ -117,8 +117,14 @@ def article_list_view(request):
     elif status_filter == 'draft':
         queryset = queryset.filter(status=Article.Status.DRAFT)
 
-    if category_name and category_name != '全部推荐':
-        queryset = queryset.filter(category__name=category_name)
+    if category_name:
+        if category_name not in ('全部推荐', 'All Recommendations'):
+            queryset = queryset.filter(category__name=category_name)
+        else:
+            queryset = queryset.exclude(category__name='Artificial Intelligence')
+    else:
+        if status_filter != 'all':
+            queryset = queryset.exclude(category__name='Artificial Intelligence')
 
     queryset = queryset.order_index = queryset.order_by('-publish_at', '-id')
 
