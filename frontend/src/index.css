@@ -56,3 +56,53 @@ html, body {
   font-family: "Outfit", "Inter", sans-serif !important;
 }
 
+/* CKEditor 5 Dark Theme skin styling */
+.ck-editor__editable_inline {
+  background-color: #080c14 !important;
+  color: #f8fafc !important;
+  border: 1px solid #334155 !important;
+  min-height: 300px;
+  border-radius: 0 0 6px 6px !important;
+}
+.ck-editor__editable_inline:focus {
+  border-color: #0066ff !important;
+}
+.ck.ck-editor__top .ck-sticky-panel .ck-toolbar {
+  background: #101726 !important;
+  border: 1px solid #334155 !important;
+  border-bottom: none !important;
+  border-radius: 6px 6px 0 0 !important;
+}
+.ck.ck-button {
+  color: #f8fafc !important;
+}
+.ck.ck-button:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+.ck.ck-button.ck-on {
+  background: rgba(0, 102, 255, 0.2) !important;
+  color: #0066ff !important;
+}
+.ck.ck-dropdown .ck-button.ck-dropdown__button {
+  background: #101726 !important;
+}
+.ck.ck-list {
+  background: #101726 !important;
+}
+.ck.ck-list__item .ck-button {
+  color: #f8fafc !important;
+}
+.ck.ck-list__item .ck-button:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+.ck.ck-toolbar__separator {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+.ck.ck-placeholder {
+  color: #64748b !important;
+}
+.ck-content p {
+  margin-bottom: 1em !important;
+}
+
+
