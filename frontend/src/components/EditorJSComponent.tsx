@@ -9,6 +9,22 @@ import Marker from '@editorjs/marker';
 import InlineCode from '@editorjs/inline-code';
 import { type EditorBlock } from '../utils/editorHtmlConverter';
 
+// 修复 @editorjs/list v2 在粘贴单条 <li> 时产生空列表的 Bug。
+// 插件原生 pasteHandler 期望传入 UL/OL 容器并查询 ":scope > li"，
+// 如果粘贴的是单个 <li>，查询就会返回空数组。这里我们动态将其包裹在虚拟的 <ul> 中处理。
+if (List && List.prototype && typeof List.prototype.pasteHandler === 'function') {
+  const originalPasteHandler = List.prototype.pasteHandler;
+  List.prototype.pasteHandler = function (element: any) {
+    if (element && element.tagName === 'LI') {
+      const dummyUl = document.createElement('ul');
+      const clonedLi = element.cloneNode(true);
+      dummyUl.appendChild(clonedLi);
+      return originalPasteHandler.call(this, dummyUl);
+    }
+    return originalPasteHandler.call(this, element);
+  };
+}
+
 interface EditorJSComponentProps {
   holder: string;
   data: EditorBlock[];
@@ -43,6 +59,8 @@ export const EditorJSComponent: React.FC<EditorJSComponentProps> = ({
       if (destroyed) return;
 
       try {
+        // 清空容器，防止 React 重复挂载或 StrictMode 导致实例化多个编辑器出现内容重复
+        container.innerHTML = '';
         const editor = new EditorJS({
           holder: holder,
           placeholder: placeholder,
@@ -109,16 +127,30 @@ export const EditorJSComponent: React.FC<EditorJSComponentProps> = ({
         clearTimeout(checkInterval);
       }
       if (editorRef.current) {
-        // 检查 destroy 是否为函数，防止报错
-        if (typeof editorRef.current.destroy === 'function') {
-          try {
-            editorRef.current.destroy();
-          } catch (e) {
-            console.warn('Error during editor.destroy:', e);
-          }
-        }
+        const editor = editorRef.current;
         editorRef.current = null;
         isInitialized.current = false;
+
+        // 只有在编辑器就绪后才执行销毁，防止初始化未完成时销毁失败导致 DOM 残留
+        if (typeof editor.destroy === 'function') {
+          editor.isReady
+            .then(() => {
+              try {
+                editor.destroy();
+              } catch (e) {
+                console.warn('Error during editor.destroy:', e);
+              }
+            })
+            .catch((e) => {
+              console.warn('Editor isReady failed during destroy:', e);
+              // 如果就绪失败，也强制尝试一次销毁
+              try {
+                editor.destroy();
+              } catch (err) {
+                console.warn('Second attempt editor.destroy failed:', err);
+              }
+            });
+        }
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -149,13 +149,20 @@ export function htmlToBlocks(html: string): EditorBlock[] {
       
       const parseLiElement = (li: Element): any => {
         const cloned = li.cloneNode(true) as HTMLElement;
-        const nestedLists = Array.from(cloned.querySelectorAll(':scope > ul, :scope > ol'));
-        nestedLists.forEach((child) => child.remove());
+        
+        // 移除克隆节点中的直接子列表，以获取当前 li 的纯文本内容
+        Array.from(cloned.children)
+          .filter((child) => child.tagName.toLowerCase() === 'ul' || child.tagName.toLowerCase() === 'ol')
+          .forEach((child) => child.remove());
         
         const content = cloned.innerHTML.trim();
         const nestedItems: any[] = [];
         
-        const directNestedLists = Array.from(li.querySelectorAll(':scope > ul, :scope > ol'));
+        // 寻找直接子列表元素，避免使用可能不被部分浏览器/解析器兼容的 :scope 选择器
+        const directNestedLists = Array.from(li.children).filter(
+          (child) => child.tagName.toLowerCase() === 'ul' || child.tagName.toLowerCase() === 'ol'
+        );
+        
         directNestedLists.forEach((nestedList) => {
           const lis = Array.from(nestedList.children).filter(
             (child) => child.tagName.toLowerCase() === 'li'
