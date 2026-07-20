@@ -1172,11 +1172,13 @@ export const AdminDashboard: React.FC = () => {
             <Typography variant="body2" sx={{ color: '#64748b', mb: 1, fontSize: '0.75rem' }}>
               {t('Content')}
             </Typography>
-            <EditorJSComponent
-              holder="editorjs-edit"
-              data={editContent}
-              onChange={(blocks) => setEditContent(blocks)}
-            />
+            {editDialogOpen && (
+              <EditorJSComponent
+                holder="editorjs-edit"
+                data={editContent}
+                onChange={(blocks) => setEditContent(blocks)}
+              />
+            )}
           </Box>
           {/* 相关文章关联智能搜索与展示 */}
           <Typography variant="subtitle2" sx={{ color: '#cbd5e1', mb: 1, fontWeight: 700 }}>
@@ -1398,11 +1400,13 @@ export const AdminDashboard: React.FC = () => {
             <Typography variant="body2" sx={{ color: '#64748b', mb: 1, fontSize: '0.75rem' }}>
               {t('Content')}
             </Typography>
-            <EditorJSComponent
-              holder="editorjs-create"
-              data={createContent}
-              onChange={(blocks) => setCreateContent(blocks)}
-            />
+            {createDialogOpen && (
+              <EditorJSComponent
+                holder="editorjs-create"
+                data={createContent}
+                onChange={(blocks) => setCreateContent(blocks)}
+              />
+            )}
           </Box>
 
           {/* 相关文章关联智能搜索与展示 */}

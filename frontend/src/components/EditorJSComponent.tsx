@@ -127,16 +127,30 @@ export const EditorJSComponent: React.FC<EditorJSComponentProps> = ({
         clearTimeout(checkInterval);
       }
       if (editorRef.current) {
-        // 检查 destroy 是否为函数，防止报错
-        if (typeof editorRef.current.destroy === 'function') {
-          try {
-            editorRef.current.destroy();
-          } catch (e) {
-            console.warn('Error during editor.destroy:', e);
-          }
-        }
+        const editor = editorRef.current;
         editorRef.current = null;
         isInitialized.current = false;
+
+        // 只有在编辑器就绪后才执行销毁，防止初始化未完成时销毁失败导致 DOM 残留
+        if (typeof editor.destroy === 'function') {
+          editor.isReady
+            .then(() => {
+              try {
+                editor.destroy();
+              } catch (e) {
+                console.warn('Error during editor.destroy:', e);
+              }
+            })
+            .catch((e) => {
+              console.warn('Editor isReady failed during destroy:', e);
+              // 如果就绪失败，也强制尝试一次销毁
+              try {
+                editor.destroy();
+              } catch (err) {
+                console.warn('Second attempt editor.destroy failed:', err);
+              }
+            });
+        }
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
