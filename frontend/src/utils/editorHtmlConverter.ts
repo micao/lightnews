@@ -5,10 +5,33 @@ export interface EditorBlock {
     text?: string;
     level?: number;
     style?: 'ordered' | 'unordered';
-    items?: string[];
+    items?: any[];
     caption?: string;
     content?: string[][];
   };
+}
+
+/**
+ * 递归地将 Editor.js List 项数组转换为 HTML 字符串
+ */
+function listItemsToHtml(items: any[], tag: 'ul' | 'ol'): string {
+  if (!items || !Array.isArray(items)) return '';
+  return items
+    .map((item) => {
+      if (typeof item === 'string') {
+        return `<li>${item}</li>`;
+      }
+      if (item && typeof item === 'object') {
+        const content = item.content || '';
+        const nestedHtml =
+          item.items && item.items.length > 0
+            ? `<${tag}>${listItemsToHtml(item.items, tag)}</${tag}>`
+            : '';
+        return `<li>${content}${nestedHtml}</li>`;
+      }
+      return '';
+    })
+    .join('');
 }
 
 /**
@@ -27,10 +50,8 @@ export function blocksToHtml(blocks: EditorBlock[]): string {
           return `<h${level}>${block.data.text || ''}</h${level}>`;
         case 'list':
           const tag = block.data.style === 'ordered' ? 'ol' : 'ul';
-          const items = (block.data.items || [])
-            .map((item) => `<li>${item}</li>`)
-            .join('');
-          return `<${tag}>${items}</${tag}>`;
+          const itemsHtml = listItemsToHtml(block.data.items || [], tag);
+          return `<${tag}>${itemsHtml}</${tag}>`;
         case 'quote':
           const captionStr = block.data.caption ? `<cite>${block.data.caption}</cite>` : '';
           return `<blockquote><p>${block.data.text || ''}</p>${captionStr}</blockquote>`;
@@ -125,9 +146,35 @@ export function htmlToBlocks(html: string): EditorBlock[] {
       });
     } else if (tagName === 'ul' || tagName === 'ol') {
       const style = tagName === 'ol' ? 'ordered' : 'unordered';
+      
+      const parseLiElement = (li: Element): any => {
+        const cloned = li.cloneNode(true) as HTMLElement;
+        const nestedLists = Array.from(cloned.querySelectorAll(':scope > ul, :scope > ol'));
+        nestedLists.forEach((child) => child.remove());
+        
+        const content = cloned.innerHTML.trim();
+        const nestedItems: any[] = [];
+        
+        const directNestedLists = Array.from(li.querySelectorAll(':scope > ul, :scope > ol'));
+        directNestedLists.forEach((nestedList) => {
+          const lis = Array.from(nestedList.children).filter(
+            (child) => child.tagName.toLowerCase() === 'li'
+          );
+          lis.forEach((nestedLi) => {
+            nestedItems.push(parseLiElement(nestedLi));
+          });
+        });
+
+        return {
+          content,
+          items: nestedItems,
+          meta: {}
+        };
+      };
+
       const items = Array.from(child.children)
         .filter((li) => li.tagName.toLowerCase() === 'li')
-        .map((li) => li.innerHTML);
+        .map((li) => parseLiElement(li));
 
       blocks.push({
         id: uniqueId,
