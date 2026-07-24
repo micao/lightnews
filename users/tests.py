@@ -201,8 +201,16 @@ class UsersAuthTests(TestCase):
         self.assertEqual(self.profile.bio, '新简介内容')
 
     def test_captcha_generation(self):
-        """测试验证码生成接口是否正常工作"""
-        response = self.client.get(reverse('captcha_view'))
+        """测试验证码生成接口在无 Token 匿名访问及有 Token 访问时均成功 (200 OK)"""
+        # 无 Token 匿名生成
+        res_unauth = self.client.get(reverse('captcha_view'))
+        self.assertEqual(res_unauth.status_code, 200)
+
+        # 有 Token 正常生成
+        response = self.client.get(
+            reverse('captcha_view'),
+            HTTP_AUTHORIZATION='Bearer test_token_string_123'
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertTrue(data['success'])
@@ -212,6 +220,52 @@ class UsersAuthTests(TestCase):
         # 检查数据库中是否记录了该验证码
         captcha = Captcha.objects.filter(id=data['captcha_id']).first()
         self.assertIsNotNone(captcha)
+
+    def test_swagger_schema_and_ui(self):
+        """测试 Swagger UI 页面及 OpenAPI 3.0 Schema 接口"""
+        # 测试 /swagger/
+        ui_res = self.client.get(reverse('swagger_ui'))
+        self.assertEqual(ui_res.status_code, 200)
+        self.assertIn(b'Swagger UI', ui_res.content)
+
+        # 测试 /api/schema/
+        schema_res = self.client.get(reverse('swagger_schema'))
+        self.assertEqual(schema_res.status_code, 200)
+        schema_data = schema_res.json()
+        self.assertEqual(schema_data['openapi'], '3.0.3')
+        self.assertIn('BearerAuth', schema_data['components']['securitySchemes'])
+        self.assertIn('/api/articles/', schema_data['paths'])
+        self.assertIn('/api/auth/login/', schema_data['paths'])
+
+    def test_get_endpoints_token_auth_enforcement(self):
+        """测试公开 GET 端点支持无 Token 匿名访问 (200 OK)，受保护端点拦截无 Token 请求 (401/403)"""
+        public_endpoints = [
+            reverse('article_list_view'),
+            reverse('category_list_view'),
+            reverse('live_news_list_view'),
+            reverse('funding_deals_list_view'),
+            reverse('captcha_view'),
+        ]
+        for ep in public_endpoints:
+            # 无 Token 匿名访问返回 200 OK
+            unauth_res = self.client.get(ep)
+            self.assertEqual(unauth_res.status_code, 200, f"Public endpoint {ep} should allow anonymous access")
+
+            # 携带有效 Bearer Token 访问同样返回 200 OK
+            auth_res = self.client.get(ep, HTTP_AUTHORIZATION='Bearer test_token_string_123')
+            self.assertEqual(auth_res.status_code, 200, f"Public endpoint {ep} should accept valid token")
+
+        protected_endpoints = [
+            reverse('profile_view'),
+            reverse('admin_pending_writers_view'),
+        ]
+        for ep in protected_endpoints:
+            # 受保护端点无 Token 请求拦截 401 或 403
+            unauth_res = self.client.get(ep)
+            self.assertIn(unauth_res.status_code, [401, 403], f"Protected endpoint {ep} should require token")
+
+
+
 
     def test_registration_with_incorrect_captcha(self):
         """测试验证码错误导致注册失败"""

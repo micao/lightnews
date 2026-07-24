@@ -5,6 +5,8 @@ from market.models import FundingDeal
 
 def funding_deals_list_view(request):
     """获取最新投融资项目列表 (MarketTicker 专属接口)"""
+
+
     try:
         # 1. 自动注入初始化的高端真实 2025/2026 年创投种子数据 (保证开箱即用)
         if not FundingDeal.objects.exists():

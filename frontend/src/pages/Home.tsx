@@ -24,6 +24,7 @@ import { TradingViewMarketOverview } from '../components/TradingViewMarketOvervi
 import { type Article } from '../types';
 import { API_BASE } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
+import { apiFetch } from '../utils/api';
 
 export const Home: React.FC = () => {
   const { t } = useI18n();
@@ -47,17 +48,12 @@ export const Home: React.FC = () => {
         setLoadingMore(true);
         setDisplayedArticles([]); // Clear articles to trigger skeleton loading immediately and keep layout consistent
       }
-      const token = localStorage.getItem('lightnews_token');
-      const headers: HeadersInit = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
 
       const categoryParam = currentCategory === 'All Recommendations' ? '' : currentCategory;
-      const res = await fetch(
-        `${API_BASE}/api/articles/?page=${pageNum}&limit=3&category=${encodeURIComponent(categoryParam)}`,
-        { headers }
+      const res = await apiFetch(
+        `${API_BASE}/api/articles/?page=${pageNum}&limit=3&category=${encodeURIComponent(categoryParam)}`
       );
+
       const data = await res.json();
       
       if (data.success) {

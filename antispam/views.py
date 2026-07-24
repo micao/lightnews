@@ -10,6 +10,8 @@ from antispam.models import Captcha
 @csrf_exempt
 @require_GET
 def captcha_view(request):
+
+
     """数学计算验证码生成接口"""
 
     num1 = random.randint(1, 10)

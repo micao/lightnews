@@ -64,10 +64,15 @@ test:
 lint-backend:
 	docker compose --env-file .env.dev exec web ruff check .
 
-# 前端代码质量与类型安全检测 (Oxlint & tsc)
+# 前端代码质量与类型安全检测 (Oxlint & tsc，无 Node 环境时自动降级使用 Docker 容器)
 lint-frontend:
-	cd frontend && npm run lint
-	cd frontend && npx tsc --noEmit
+
+	@if command -v npm >/dev/null 2>&1; then \
+		cd frontend && npm run lint && npx tsc --noEmit; \
+	else \
+		docker run --rm -v $(shell pwd)/frontend:/app -w /app node:20-alpine sh -c "npm run lint && npx tsc --noEmit"; \
+	fi
+
 
 # 全栈代码质量统一核查
 lint: lint-backend lint-frontend

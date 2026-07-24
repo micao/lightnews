@@ -236,3 +236,69 @@ class NewsArticleAPITests(TestCase):
         self.assertEqual(self.article_1.title, 'ASML 2026年最新光刻机出货分析（已修正）')
         self.assertTrue(self.article_1.is_vip_only)
         self.assertEqual(self.article_1.related_articles.count(), 0) # 关联确实被移除
+
+    def test_admin_delete_article(self):
+        """测试管理员删除文章"""
+        response = self.client.delete(
+            reverse('admin_article_delete_view', kwargs={'article_id': self.article_1.id}),
+            HTTP_AUTHORIZATION='Bearer admin_token_string_123'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['success'])
+        self.assertFalse(Article.objects.filter(id=self.article_1.id).exists())
+
+    def test_live_news_public_and_admin_flow(self):
+        """测试创投快讯的前台拉取、管理员审核通过与下架驳回流程"""
+        from news.models import LiveNews
+
+        # 1. 创建未审核与已审核的快讯
+        news_pending = LiveNews.objects.create(
+            content='月之暗面完成新一轮10亿美元融资报道草稿',
+            urgency='high',
+            is_approved=False,
+            author=self.author
+        )
+        news_approved = LiveNews.objects.create(
+            content='宇树科技发布全新具身智能人形机器人',
+            urgency='normal',
+            is_approved=True,
+            author=self.author
+        )
+
+        # 2. 公开前台接口：仅能查看到已审核的快讯
+        res_public = self.client.get(reverse('live_news_list_view'))
+        self.assertEqual(res_public.status_code, 200)
+        public_news = res_public.json()['news']
+        self.assertTrue(any(n['id'] == news_approved.id for n in public_news))
+        self.assertFalse(any(n['id'] == news_pending.id for n in public_news))
+
+        # 3. 管理员后台：拉取待审核快讯列表
+        res_admin_list = self.client.get(
+            reverse('admin_livenews_list_view'),
+            HTTP_AUTHORIZATION='Bearer admin_token_string_123'
+        )
+        self.assertEqual(res_admin_list.status_code, 200)
+        pending_news = res_admin_list.json()['news']
+        self.assertTrue(any(n['id'] == news_pending.id for n in pending_news))
+
+        # 4. 管理员审核通过待处理快讯
+        res_approve = self.client.post(
+            reverse('admin_livenews_approve_view'),
+            data=json.dumps({'news_id': news_pending.id, 'action': 'approve'}),
+            content_type='application/json',
+            HTTP_AUTHORIZATION='Bearer admin_token_string_123'
+        )
+        self.assertEqual(res_approve.status_code, 200)
+        news_pending.refresh_from_db()
+        self.assertTrue(news_pending.is_approved)
+
+        # 5. 管理员直接发布新快讯
+        res_create = self.client.post(
+            reverse('admin_livenews_create_view'),
+            data=json.dumps({'content': '管理员直接发布的紧急突发快讯', 'urgency': 'critical', 'tag': '融资'}),
+            content_type='application/json',
+            HTTP_AUTHORIZATION='Bearer admin_token_string_123'
+        )
+        self.assertEqual(res_create.status_code, 200)
+        self.assertTrue(res_create.json()['success'])
+

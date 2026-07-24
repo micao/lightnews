@@ -8,7 +8,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from news.models import Article, Category, LiveNews
 from users.models import User, UserProfile
-from users.views import get_authenticated_user
+from users.views import get_authenticated_user, require_token_auth
 
 
 def serialize_article(article, request=None, is_detail=False):
@@ -204,6 +204,8 @@ def live_news_list_view(request):
 
 @csrf_exempt
 def seed_data_view(request):
+
+
     """一键填充创投数据 API (开发及测试环境专用)"""
     try:
         # 1. 创建分类
@@ -342,6 +344,7 @@ def seed_data_view(request):
         return JsonResponse({'success': False, 'message': f'填充异常: {str(e)}'}, status=500)
 
 @csrf_exempt
+@require_token_auth
 def admin_livenews_list_view(request):
     """获取所有未审核的待处理快报 (管理员专用)"""
     try:
@@ -382,6 +385,7 @@ def admin_livenews_list_view(request):
 
 @csrf_exempt
 @require_POST
+@require_token_auth
 def admin_livenews_approve_view(request):
     """审核或驳回快报 (管理员专用)"""
 
@@ -417,7 +421,9 @@ def admin_livenews_approve_view(request):
 
 @csrf_exempt
 @require_POST
+@require_token_auth
 def admin_livenews_create_view(request):
+
     """主编手动直接发布新快报 (管理员专用)"""
 
     try:
@@ -465,6 +471,7 @@ def admin_livenews_create_view(request):
 
 @csrf_exempt
 @require_POST
+@require_token_auth
 def admin_article_create_view(request):
     """管理员发布创投分析文章"""
 
@@ -541,6 +548,7 @@ def admin_article_create_view(request):
 
 @csrf_exempt
 @require_http_methods(["PUT", "POST"])
+@require_token_auth
 def admin_article_update_view(request, article_id):
     """管理员编辑文章 (支持修改标题、摘要、内容、分类、状态、VIP标识)"""
 
@@ -625,7 +633,9 @@ def admin_article_delete_view(request, article_id):
 
 @csrf_exempt
 @require_POST
+@require_token_auth
 def admin_article_upload_image_view(request, article_id):
+
     """管理员上传/更改文章配图并自动生成缩略图"""
 
     try:

@@ -1,5 +1,6 @@
 import json
 import uuid
+from functools import wraps
 
 from django.conf import settings
 from django.contrib.auth import authenticate
@@ -12,6 +13,7 @@ from users.models import User, UserProfile, UserToken
 
 
 def get_authenticated_user(request):
+
     """从 Authorization 头部解析 Token 并获取用户"""
     auth_header = request.headers.get('Authorization') or request.META.get('HTTP_AUTHORIZATION')
     if not auth_header:
@@ -27,6 +29,21 @@ def get_authenticated_user(request):
     except Exception:
         pass
     return None
+
+def require_token_auth(view_func):
+    """强制要求 Authorization: Bearer <token> 请求头的装饰器"""
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        user = get_authenticated_user(request)
+        if not user:
+            return JsonResponse({
+                'success': False,
+                'message': '未授权或 Token 已过期，请在 Header 中附加有效的 Authorization: Bearer <token>'
+            }, status=401)
+        request.user = user
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
+
 
 def get_user_roles(user):
     """返回用户的角色列表"""
@@ -255,6 +272,7 @@ def apply_writer_view(request):
 
 @csrf_exempt
 @require_GET
+@require_token_auth
 def admin_pending_writers_view(request):
     """总管理员查看所有待审核的专栏作者申请"""
 
@@ -281,7 +299,9 @@ def admin_pending_writers_view(request):
 
 @csrf_exempt
 @require_POST
+@require_token_auth
 def admin_approve_writer_view(request):
+
     """总管理员审核审批写作者申请"""
 
     user = get_authenticated_user(request)

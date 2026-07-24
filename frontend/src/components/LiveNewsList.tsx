@@ -6,6 +6,7 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { type LiveNews } from '../types';
 import { useI18n } from '../context/I18nContext';
 import { API_BASE } from '../context/AuthContext';
+import { apiFetch } from '../utils/api';
 
 export const LiveNewsList: React.FC = () => {
   const [newsList, setNewsList] = useState<LiveNews[]>([]);
@@ -14,7 +15,8 @@ export const LiveNewsList: React.FC = () => {
 
   const fetchLiveNews = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/livenews/`);
+      const res = await apiFetch(`${API_BASE}/api/livenews/`);
+
       const data = await res.json();
       if (data.success) {
         setNewsList(data.news);

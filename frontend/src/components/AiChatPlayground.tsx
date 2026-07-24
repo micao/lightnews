@@ -3,11 +3,13 @@ import { Box, Card, CardContent, Typography, TextField, IconButton } from '@mui/
 import SendIcon from '@mui/icons-material/Send';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import { API_BASE } from '../context/AuthContext';
+import { apiFetch } from '../utils/api';
 
 interface Message {
   sender: 'user' | 'agent';
   text: string;
 }
+
 
 const KEYWORD_ANSWERS = [
   {
@@ -87,7 +89,8 @@ export const AiChatPlayground: React.FC = () => {
         userText.toLowerCase().includes('news') || 
         userText.includes('文章')
       ) {
-        fetch(`${API_BASE}/api/articles/?category=Artificial%20Intelligence`)
+        apiFetch(`${API_BASE}/api/articles/?category=Artificial%20Intelligence`)
+
           .then(res => res.json())
           .then(data => {
             if (data.success && data.articles && data.articles.length > 0) {

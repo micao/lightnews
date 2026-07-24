@@ -8,7 +8,7 @@ from django.views.decorators.http import require_POST
 from antispam.utils import verify_and_burn_captcha
 from interactions.models import Comment, Like
 from news.models import Article
-from users.views import get_authenticated_user, get_user_roles
+from users.views import get_authenticated_user, get_user_roles, require_token_auth
 
 
 def serialize_comment(cmt):
@@ -37,8 +37,11 @@ def serialize_comment(cmt):
 
     return serialized
 
+
 def comment_list_view(request):
+
     """获取文章的评论树列表"""
+
     article_slug = request.GET.get('article_slug', '').strip()
     if not article_slug:
         return JsonResponse({'success': False, 'message': '参数 article_slug 不能为空'}, status=400)
@@ -184,6 +187,7 @@ def like_toggle_view(request):
         return JsonResponse({'success': False, 'message': f'点赞异常: {str(e)}'}, status=500)
 
 @csrf_exempt
+@require_token_auth
 def admin_comments_view(request):
     """拉取所有待审核评论 (仅限管理员)"""
     user = get_authenticated_user(request)
@@ -210,7 +214,9 @@ def admin_comments_view(request):
 
 @csrf_exempt
 @require_POST
+@require_token_auth
 def admin_comment_approve_view(request):
+
     """审核评论通过或删除 (仅限管理员)"""
     user = get_authenticated_user(request)
     if not user or 'ROLE_ADMIN_USER' not in get_user_roles(user):

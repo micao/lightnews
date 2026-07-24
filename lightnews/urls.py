@@ -10,6 +10,7 @@ from interactions.views import (
     comment_list_view,
     like_toggle_view,
 )
+from lightnews.swagger import swagger_schema_view, swagger_ui_view
 from market.views import funding_deals_list_view
 from news.views import (
     admin_article_create_view,
@@ -43,6 +44,13 @@ def comment_dispatch(request):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    # Swagger API 文档与 Schema 规范
+    path('swagger/', swagger_ui_view, name='swagger_ui'),
+    path('api/docs/', swagger_ui_view, name='swagger_ui_alt'),
+    path('api/schema/', swagger_schema_view, name='swagger_schema'),
+
+
 
     # 鉴权
     path('api/auth/register/', register_view, name='register_view'),

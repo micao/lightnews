@@ -1,31 +1,11 @@
-/* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { type User, type UserRole } from '../types';
+import { apiFetch, API_BASE } from '../utils/api';
+import { AuthContext } from './AuthContextObject';
 
-// 本地开发使用 http://localhost（Nginx 监听口），生产环境或 IP 访问使用相对路径以适配真实域名
-export const API_BASE =
-  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost'
-    : '';
 
-interface AuthContextType {
-  user: User | null;
-  login: (username: string, password?: string, roleType?: 'admin' | 'user') => Promise<boolean>;
-  register: (
-    username: string,
-    password: string,
-    nickname?: string,
-    phoneNumber?: string,
-    captchaId?: string,
-    captchaAnswer?: string
-  ) => Promise<boolean>;
-  logout: () => void;
-  hasRole: (role: UserRole) => boolean;
-  loading: boolean;
-  refreshProfile: () => Promise<void>;
-}
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -35,11 +15,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // 从 localStorage 中恢复登录态并向后端请求最新资料验证
     const token = localStorage.getItem('lightnews_token');
     if (token) {
-      fetch(`${API_BASE}/api/auth/profile/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      apiFetch(`${API_BASE}/api/auth/profile/`)
         .then(res => {
           if (res.ok) {
             return res.json();
@@ -63,6 +39,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     }
   }, []);
+
+
+
 
   const login = async (username: string, password?: string, roleType?: 'admin' | 'user'): Promise<boolean> => {
     try {
@@ -132,14 +111,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const refreshProfile = async (): Promise<void> => {
-    const token = localStorage.getItem('lightnews_token');
-    if (!token) return;
     try {
-      const res = await fetch(`${API_BASE}/api/auth/profile/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const res = await apiFetch(`${API_BASE}/api/auth/profile/`);
       const data = await res.json();
       if (data.success) {
         setUser(data.user);
@@ -149,6 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+
   return (
     <AuthContext.Provider value={{ user, login, register, logout, hasRole, loading, refreshProfile }}>
       {children}
@@ -156,10 +130,3 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
