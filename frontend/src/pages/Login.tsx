@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth, API_BASE } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
+import { API_BASE, apiFetch } from '../utils/api';
+
 import { useI18n } from '../context/I18nContext';
 import {
   Box,
@@ -43,7 +45,7 @@ export const Login: React.FC = () => {
 
   const fetchCaptcha = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/antispam/captcha/`);
+      const res = await apiFetch(`${API_BASE}/api/antispam/captcha/`);
       const data = await res.json();
       if (data.success) {
         setCaptchaId(data.captcha_id);

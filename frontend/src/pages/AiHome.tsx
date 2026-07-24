@@ -11,8 +11,9 @@ import StarIcon from '@mui/icons-material/Star';
 import { AiToolkitDirectory } from '../components/AiToolkitDirectory';
 import { AiChatPlayground } from '../components/AiChatPlayground';
 import { type Article } from '../types';
-import { API_BASE } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
+import { apiFetch, API_BASE } from '../utils/api';
+
 
 // 嵌套专区局部赛博主题: 紫色与青色未来极客风
 const aiTheme = createTheme({
@@ -55,7 +56,8 @@ export const AiHome: React.FC = () => {
   const fetchAiArticles = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/api/articles/?category=Artificial%20Intelligence`);
+      const res = await apiFetch(`${API_BASE}/api/articles/?category=Artificial%20Intelligence`);
+
       const data = await res.json();
       if (data.success) {
         setArticles(data.articles);

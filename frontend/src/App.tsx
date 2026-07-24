@@ -4,7 +4,10 @@ import { ThemeProvider } from '@mui/material/styles';
 import { CssBaseline, AppBar, Toolbar, Typography, Button, Box, Avatar, Container } from '@mui/material';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { theme } from './theme';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
+import { useAuth } from './hooks/useAuth';
+
+
 import { I18nProvider, useI18n } from './context/I18nContext';
 const Home = React.lazy(() => import('./pages/Home').then((m) => ({ default: m.Home })));
 const AiHome = React.lazy(() => import('./pages/AiHome').then((m) => ({ default: m.AiHome })));

@@ -24,9 +24,11 @@ import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import StarIcon from '@mui/icons-material/Star';
 import LockIcon from '@mui/icons-material/Lock';
-import { useAuth, API_BASE } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useI18n } from '../context/I18nContext';
 import { type Article, type Comment } from '../types';
+import { apiFetch, API_BASE } from '../utils/api';
+
 
 export const ArticleDetail: React.FC = () => {
   const { t } = useI18n();
@@ -47,7 +49,7 @@ export const ArticleDetail: React.FC = () => {
 
   const fetchCommentCaptcha = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/antispam/captcha/`);
+      const res = await apiFetch(`${API_BASE}/api/antispam/captcha/`);
       const data = await res.json();
       if (data.success) {
         setCommentCaptchaId(data.captcha_id);
@@ -62,14 +64,8 @@ export const ArticleDetail: React.FC = () => {
   // 加载文章和评论数据
   const fetchArticleAndComments = async () => {
     try {
-      const token = localStorage.getItem('lightnews_token');
-      const headers: HeadersInit = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
       // 获取文章详情
-      const artRes = await fetch(`${API_BASE}/api/articles/${slug}/`, { headers });
+      const artRes = await apiFetch(`${API_BASE}/api/articles/${slug}/`);
       const artData = await artRes.json();
       if (artData.success) {
         setArticle(artData.article);
@@ -78,7 +74,7 @@ export const ArticleDetail: React.FC = () => {
       }
 
       // 获取审核过的评论树
-      const cmtRes = await fetch(`${API_BASE}/api/interactions/comment/?article_slug=${slug}`);
+      const cmtRes = await apiFetch(`${API_BASE}/api/interactions/comment/?article_slug=${slug}`);
       const cmtData = await cmtRes.json();
       if (cmtData.success) {
         setComments(cmtData.comments);
@@ -92,6 +88,7 @@ export const ArticleDetail: React.FC = () => {
       setDetailLoading(false);
     }
   };
+
 
   useEffect(() => {
     if (slug) {
@@ -147,11 +144,10 @@ export const ArticleDetail: React.FC = () => {
         return;
       }
 
-      const res = await fetch(`${API_BASE}/api/interactions/comment/`, {
+      const res = await apiFetch(`${API_BASE}/api/interactions/comment/`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           article_slug: slug,
@@ -160,6 +156,7 @@ export const ArticleDetail: React.FC = () => {
           captcha_answer: commentCaptchaAnswer.trim()
         })
       });
+
       const data = await res.json();
       if (data.success) {
         alert(data.message || t('Comment Success'));

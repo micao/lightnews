@@ -44,10 +44,11 @@ import SendIcon from '@mui/icons-material/Send';
 import { useNavigate } from 'react-router-dom';
 import { MetricChart } from '../components/MetricChart';
 import { type Article } from '../types';
-import { API_BASE } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import { EditorJSComponent } from '../components/EditorJSComponent';
 import { htmlToBlocks, blocksToHtml, type EditorBlock } from '../utils/editorHtmlConverter';
+import { apiFetch, API_BASE } from '../utils/api';
+
 
 export const AdminDashboard: React.FC = () => {
   const { t } = useI18n();
@@ -109,7 +110,7 @@ export const AdminDashboard: React.FC = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/categories/`);
+        const res = await apiFetch(`${API_BASE}/api/categories/`);
         const data = await res.json();
         if (data.success && data.categories) {
           setCategoriesList(data.categories);
@@ -138,13 +139,8 @@ export const AdminDashboard: React.FC = () => {
     const delayDebounce = setTimeout(async () => {
       setSearchLoading(true);
       try {
-        const token = localStorage.getItem('lightnews_token');
-        const headers: HeadersInit = {};
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
         // 由于是选择关联文章，为了方便匹配所有状态的文章，传递 status=all
-        const res = await fetch(`${API_BASE}/api/articles/?q=${encodeURIComponent(searchQuery)}&status=all&limit=10`, { headers });
+        const res = await apiFetch(`${API_BASE}/api/articles/?q=${encodeURIComponent(searchQuery)}&status=all&limit=10`);
         const data = await res.json();
         if (data.success) {
           setSearchResults(data.articles);
@@ -157,6 +153,7 @@ export const AdminDashboard: React.FC = () => {
     }, 300);
     return () => clearTimeout(delayDebounce);
   }, [searchQuery]);
+
 
   // 创投统计指标：每周收到的商业计划书数量
   const proposalsTrendData = [
@@ -180,12 +177,7 @@ export const AdminDashboard: React.FC = () => {
   const fetchArticles = async () => {
     setLoadingArticles(true);
     try {
-      const token = localStorage.getItem('lightnews_token');
-      const headers: HeadersInit = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      const res = await fetch(`${API_BASE}/api/articles/?page=${page}&limit=${itemsPerPage}&status=all`, { headers });
+      const res = await apiFetch(`${API_BASE}/api/articles/?page=${page}&limit=${itemsPerPage}&status=all`);
       const data = await res.json();
       if (data.success) {
         setArticles(data.articles);
@@ -201,14 +193,7 @@ export const AdminDashboard: React.FC = () => {
   // 拉取待审核评论列表
   const fetchPendingComments = async () => {
     try {
-      const token = localStorage.getItem('lightnews_token');
-      if (!token) return;
-
-      const res = await fetch(`${API_BASE}/api/admin/comments/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const res = await apiFetch(`${API_BASE}/api/admin/comments/`);
       const data = await res.json();
       if (data.success) {
         setPendingComments(data.comments);
@@ -221,14 +206,7 @@ export const AdminDashboard: React.FC = () => {
   // 拉取待审核快报列表
   const fetchPendingLiveNews = async () => {
     try {
-      const token = localStorage.getItem('lightnews_token');
-      if (!token) return;
-
-      const res = await fetch(`${API_BASE}/api/admin/livenews/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const res = await apiFetch(`${API_BASE}/api/admin/livenews/`);
       const data = await res.json();
       if (data.success) {
         setPendingLiveNews(data.news);
@@ -241,14 +219,7 @@ export const AdminDashboard: React.FC = () => {
   // 拉取待审核写作者申请列表
   const fetchPendingWriters = async () => {
     try {
-      const token = localStorage.getItem('lightnews_token');
-      if (!token) return;
-
-      const res = await fetch(`${API_BASE}/api/admin/users/pending/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const res = await apiFetch(`${API_BASE}/api/admin/users/pending/`);
       const data = await res.json();
       if (data.success) {
         setPendingWriters(data.pending_users);
@@ -261,14 +232,10 @@ export const AdminDashboard: React.FC = () => {
   // 审批写作者入驻申请
   const handleApproveWriter = async (userId: number, action: 'approve' | 'reject') => {
     try {
-      const token = localStorage.getItem('lightnews_token');
-      if (!token) return;
-
-      const res = await fetch(`${API_BASE}/api/admin/users/approve/`, {
+      const res = await apiFetch(`${API_BASE}/api/admin/users/approve/`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ user_id: userId, action })
       });
@@ -287,6 +254,7 @@ export const AdminDashboard: React.FC = () => {
       setSnackbarOpen(true);
     }
   };
+
 
   useEffect(() => {
     if (activeTab === 0) {

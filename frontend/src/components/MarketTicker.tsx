@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import { type FundingTickerItem } from '../types';
-import { API_BASE } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
+import { apiFetch, API_BASE } from '../utils/api';
+
 
 export const MarketTicker: React.FC = () => {
   const [fundingDeals, setFundingDeals] = useState<FundingTickerItem[]>([]);
@@ -10,7 +11,8 @@ export const MarketTicker: React.FC = () => {
 
   const fetchDeals = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/market/ticker/`);
+      const res = await apiFetch(`${API_BASE}/api/market/ticker/`);
+
       const data = await res.json();
       if (data.success) {
         setFundingDeals(data.deals);

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth, API_BASE } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
+import { API_BASE, apiFetch } from '../utils/api';
+
 import { useI18n } from '../context/I18nContext';
 import {
   Box,
@@ -36,12 +38,10 @@ export const Profile: React.FC = () => {
     setApplying(true);
     setApplyMessage('');
     try {
-      const token = localStorage.getItem('lightnews_token');
-      const res = await fetch(`${API_BASE}/api/auth/apply-writer/`, {
+      const res = await apiFetch(`${API_BASE}/api/auth/apply-writer/`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ credentials })
       });
