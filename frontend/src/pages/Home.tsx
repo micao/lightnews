@@ -22,9 +22,9 @@ import StarIcon from '@mui/icons-material/Star';
 import { LiveNewsList } from '../components/LiveNewsList';
 import { TradingViewMarketOverview } from '../components/TradingViewMarketOverview';
 import { type Article } from '../types';
-import { API_BASE } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
-import { apiFetch } from '../utils/api';
+import { apiFetch, API_BASE } from '../utils/api';
+
 
 export const Home: React.FC = () => {
   const { t } = useI18n();

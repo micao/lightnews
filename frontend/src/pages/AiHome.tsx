@@ -11,9 +11,9 @@ import StarIcon from '@mui/icons-material/Star';
 import { AiToolkitDirectory } from '../components/AiToolkitDirectory';
 import { AiChatPlayground } from '../components/AiChatPlayground';
 import { type Article } from '../types';
-import { API_BASE } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
-import { apiFetch } from '../utils/api';
+import { apiFetch, API_BASE } from '../utils/api';
+
 
 // 嵌套专区局部赛博主题: 紫色与青色未来极客风
 const aiTheme = createTheme({

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import { type FundingTickerItem } from '../types';
-import { API_BASE } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
-import { apiFetch } from '../utils/api';
+import { apiFetch, API_BASE } from '../utils/api';
+
 
 export const MarketTicker: React.FC = () => {
   const [fundingDeals, setFundingDeals] = useState<FundingTickerItem[]>([]);

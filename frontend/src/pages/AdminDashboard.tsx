@@ -44,11 +44,11 @@ import SendIcon from '@mui/icons-material/Send';
 import { useNavigate } from 'react-router-dom';
 import { MetricChart } from '../components/MetricChart';
 import { type Article } from '../types';
-import { API_BASE } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import { EditorJSComponent } from '../components/EditorJSComponent';
 import { htmlToBlocks, blocksToHtml, type EditorBlock } from '../utils/editorHtmlConverter';
-import { apiFetch } from '../utils/api';
+import { apiFetch, API_BASE } from '../utils/api';
+
 
 export const AdminDashboard: React.FC = () => {
   const { t } = useI18n();

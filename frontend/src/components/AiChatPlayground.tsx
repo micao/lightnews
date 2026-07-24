@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Box, Card, CardContent, Typography, TextField, IconButton } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import TerminalIcon from '@mui/icons-material/Terminal';
-import { API_BASE } from '../context/AuthContext';
-import { apiFetch } from '../utils/api';
+import { apiFetch, API_BASE } from '../utils/api';
+
 
 interface Message {
   sender: 'user' | 'agent';
